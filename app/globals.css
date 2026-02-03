@@ -1,0 +1,239 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* IBM Plex Sans - Police officielle MAOS */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans/fonts/complete/woff2/IBMPlexSans-Regular.woff2') format('woff2'),
+       url('/fonts/ibm-plex-sans/fonts/complete/woff/IBMPlexSans-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans/fonts/complete/woff2/IBMPlexSans-Medium.woff2') format('woff2'),
+       url('/fonts/ibm-plex-sans/fonts/complete/woff/IBMPlexSans-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans/fonts/complete/woff2/IBMPlexSans-SemiBold.woff2') format('woff2'),
+       url('/fonts/ibm-plex-sans/fonts/complete/woff/IBMPlexSans-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans/fonts/complete/woff2/IBMPlexSans-Bold.woff2') format('woff2'),
+       url('/fonts/ibm-plex-sans/fonts/complete/woff/IBMPlexSans-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans/fonts/complete/woff2/IBMPlexSans-Light.woff2') format('woff2'),
+       url('/fonts/ibm-plex-sans/fonts/complete/woff/IBMPlexSans-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans/fonts/complete/woff2/IBMPlexSans-Italic.woff2') format('woff2'),
+       url('/fonts/ibm-plex-sans/fonts/complete/woff/IBMPlexSans-Italic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 142 76% 36%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Thème ERPNext Dark - Noir */
+    --background: 220 10% 6%;           /* #0d0f11 - Fond noir ERPNext */
+    --foreground: 210 14% 89%;          /* #d1d8dd - Texte clair */
+    --card: 220 10% 9%;                 /* #141619 - Cartes légèrement plus clair */
+    --card-foreground: 210 14% 89%;
+    --popover: 220 10% 9%;
+    --popover-foreground: 210 14% 89%;
+    --primary: 142 76% 36%;             /* Vert MAOS conservé */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 10% 12%;           /* #1a1d20 - Éléments secondaires */
+    --secondary-foreground: 210 14% 89%;
+    --muted: 220 10% 12%;
+    --muted-foreground: 215 14% 60%;    /* Texte atténué */
+    --accent: 220 10% 14%;
+    --accent-foreground: 210 14% 89%;
+    --destructive: 0 62.8% 40%;
+    --destructive-foreground: 210 14% 89%;
+    --border: 220 10% 16%;              /* #242729 - Bordures */
+    --input: 220 10% 16%;
+    --ring: 142 76% 36%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+
+/* MAOS Talk Styles */
+.maos-talk-container {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+
+/* Hide scrollbar for textarea */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ══════ LANDING PAGE ══════ */
+
+.main {
+  min-height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  background: radial-gradient(circle at top, #141619 0%, #0d0f11 70%) !important;
+  color: #d1d8dd !important;
+  font-family: "IBM Plex Sans", system-ui, sans-serif !important;
+  position: relative !important;
+  padding-bottom: 150px !important;
+}
+
+.top-nav {
+  position: absolute;
+  top: 22px;
+  right: 32px;
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+}
+
+.top-nav a {
+  color: #8d99a6;
+  text-decoration: none;
+}
+
+.top-nav a:hover {
+  text-decoration: underline;
+}
+
+.logo {
+  margin-top: 56px !important;
+  width: 180px !important;
+  height: auto !important;
+}
+
+.title {
+  margin-top: 74px !important;
+  font-size: 29px !important;
+  line-height: 58px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+}
+
+.cta {
+  margin-top: 42px;
+  margin-bottom: 42px;
+}
+
+.cta a {
+  background: #22c55e;
+  color: #fff;
+  padding: 18px 48px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.cta a:hover {
+  background: #16a34a;
+}
+
+.subtitle {
+  margin-top: 0;
+  font-size: 19px;
+  opacity: 0.85;
+  text-align: center;
+  line-height: 1.8;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: #fff;
+  color: #111;
+  font-size: 23px;
+  padding: 32px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.footer a {
+  color: #22c55e;
+  margin-left: 10px;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}

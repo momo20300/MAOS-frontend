@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { createContext, useState, useContext, useEffect } from "react";
+import { createContext, useState, useContext, useEffect, useRef } from "react";
 
 type Theme = "light" | "dark";
 
@@ -12,31 +12,40 @@ type ThemeContextType = {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Helper to get initial theme from localStorage (runs once on mount)
+function getInitialTheme(): Theme {
+  if (typeof window !== "undefined") {
+    const savedTheme = localStorage.getItem("theme") as Theme | null;
+    return savedTheme || "light";
+  }
+  return "light";
+}
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const isInitialized = useRef(false);
 
+  // Apply theme changes to DOM and localStorage
   useEffect(() => {
-    // This code will only run on the client side
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const initialTheme = savedTheme || "light"; // Default to light theme
-
-    setTheme(initialTheme);
-    setIsInitialized(true);
-  }, []);
-
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem("theme", theme);
+    // Skip the first render to avoid hydration issues
+    if (!isInitialized.current) {
+      isInitialized.current = true;
+      // Apply initial theme to DOM
       if (theme === "dark") {
         document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
       }
+      return;
     }
-  }, [theme, isInitialized]);
+
+    localStorage.setItem("theme", theme);
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
 
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
