@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Sparkles, Loader2, Mic, MicOff, Upload, X, FileText, Image, File, Volume2, VolumeX, Download, Minimize2, Maximize2, MessageSquare } from "lucide-react";
+import { Send, Sparkles, Loader2, Mic, MicOff, Upload, X, FileText, Image, File, Volume2, VolumeX, Download, Minimize2, Maximize2, MessageSquare, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { sendMessageToAI, Message, fileToBase64, AIResponse, AttachedFile } from "@/lib/services/ai";
+import { sendMessageToAI, sendMessageStreamingSSE, Message, fileToBase64, AIResponse, AttachedFile, StreamingCallbacks } from "@/lib/services/ai";
 
 interface UploadedFile {
   file: File;
@@ -24,7 +24,14 @@ export default function MaosTalk() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [useStreaming, setUseStreaming] = useState(true); // Enable streaming by default for faster responses
+  const [streamingText, setStreamingText] = useState(""); // Current streaming text
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
+  const audioQueueRef = useRef<{ audio: HTMLAudioElement; index: number }[]>([]);
+  const currentAudioIndexRef = useRef(-1);
+  const expectedAudioCountRef = useRef(0); // Track how many sentences we expect
+  const streamingCompleteRef = useRef(false); // Track if streaming is done
+  const isPlayingRef = useRef(false); // MUTEX: Prevent multiple simultaneous playbacks
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -507,6 +514,12 @@ export default function MaosTalk() {
     console.log('🎤 handleSendWithText called with voice input');
     console.log('🎤 uploadedFiles:', uploadedFiles.length, 'files');
 
+    // Use streaming for simple text queries (no files) - faster response!
+    if (useStreaming && uploadedFiles.length === 0 && textToSend.trim()) {
+      console.log('⚡ Using STREAMING mode for faster response');
+      return handleSendStreaming(textToSend);
+    }
+
     let userContent = textToSend.trim();
     const imagesToSend: string[] = [];
     const filesToSend: Array<{ name: string; type: string; content: string }> = [];
@@ -602,6 +615,179 @@ export default function MaosTalk() {
     }
   };
 
+  // ===== STREAMING SEND =====
+  // Sends message with real-time streaming for faster perceived response
+  const handleSendStreaming = async (textToSend: string) => {
+    if (!textToSend.trim() || isLoading) return;
+
+    setMessage("");
+    setStreamingText("");
+    audioQueueRef.current = [];
+    currentAudioIndexRef.current = -1;
+    expectedAudioCountRef.current = 0;
+    streamingCompleteRef.current = false;
+    isPlayingRef.current = false;
+
+    const userMessage: Message = {
+      role: "user" as const,
+      content: textToSend.trim(),
+    };
+
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setIsLoading(true);
+
+    // Add placeholder for streaming response
+    const streamingMessage: Message = {
+      role: "assistant",
+      content: "",
+      lang: "fr",
+      direction: "ltr",
+    };
+    setMessages([...newMessages, streamingMessage]);
+
+    const callbacks: StreamingCallbacks = {
+      onTextChunk: (chunk: string) => {
+        setStreamingText(prev => prev + chunk);
+        // Update the last message with new text
+        setMessages(msgs => {
+          const updated = [...msgs];
+          const lastIndex = updated.length - 1;
+          const lastMsg = updated[lastIndex];
+          if (lastMsg && lastMsg.role === "assistant") {
+            updated[lastIndex] = {
+              ...lastMsg,
+              content: (lastMsg.content || "") + chunk,
+            };
+          }
+          return updated;
+        });
+      },
+
+      onSentenceComplete: (sentence: string, index: number) => {
+        // Track expected audio count
+        expectedAudioCountRef.current = Math.max(expectedAudioCountRef.current, index + 1);
+      },
+
+      onAudioReady: (audioBase64: string, index: number) => {
+        if (!ttsEnabled || !audioBase64 || audioBase64.length === 0) return;
+
+        // Create audio element and add to queue
+        const audioUrl = `data:audio/mpeg;base64,${audioBase64}`;
+        const audio = new Audio(audioUrl);
+        audioQueueRef.current.push({ audio, index });
+
+        // Start playing if this is the first or next in sequence
+        if (currentAudioIndexRef.current === -1 || index === currentAudioIndexRef.current + 1) {
+          playNextAudio();
+        }
+      },
+
+      onComplete: (fullText: string, processingTime: number, audioCount?: number) => {
+        console.log(`✅ Stream done: ${processingTime}ms, ${audioQueueRef.current.length}/${audioCount || '?'} audio`);
+        streamingCompleteRef.current = true;
+        setIsLoading(false);
+        setStreamingText("");
+
+        // Final update to ensure message is complete
+        setMessages(msgs => {
+          const updated = [...msgs];
+          const lastIndex = updated.length - 1;
+          const lastMsg = updated[lastIndex];
+          if (lastMsg && lastMsg.role === "assistant") {
+            updated[lastIndex] = {
+              ...lastMsg,
+              content: fullText,
+            };
+          }
+          return updated;
+        });
+
+        // If audio is stuck waiting for a missing segment, skip to next available
+        setTimeout(() => {
+          if (audioQueueRef.current.length > 0 && !isPlayingRef.current) {
+            playNextAudio();
+          }
+        }, 300);
+      },
+
+      onError: (error: string) => {
+        console.error("❌ Streaming error:", error);
+        setIsLoading(false);
+        setMessages(msgs => {
+          const updated = [...msgs];
+          const lastIndex = updated.length - 1;
+          const lastMsg = updated[lastIndex];
+          if (lastMsg && lastMsg.role === "assistant") {
+            updated[lastIndex] = {
+              ...lastMsg,
+              content: "Une erreur est survenue. Veuillez réessayer.",
+            };
+          }
+          return updated;
+        });
+      },
+    };
+
+    try {
+      await sendMessageStreamingSSE(textToSend.trim(), callbacks, { wantAudio: ttsEnabled });
+    } catch (error) {
+      console.error("Streaming failed:", error);
+      setIsLoading(false);
+    }
+  };
+
+  // Play audio from queue in sequence (with mutex to prevent overlapping)
+  const playNextAudio = () => {
+    // MUTEX: Prevent multiple simultaneous playbacks
+    if (isPlayingRef.current) return;
+
+    let nextIndex = currentAudioIndexRef.current + 1;
+    let nextAudio = audioQueueRef.current.find(a => a.index === nextIndex);
+
+    // If streaming is complete and the next audio is missing, skip to the next available
+    if (!nextAudio && streamingCompleteRef.current) {
+      const availableIndices = audioQueueRef.current
+        .map(a => a.index)
+        .filter(i => i > currentAudioIndexRef.current)
+        .sort((a, b) => a - b);
+
+      const firstAvailable = availableIndices[0];
+      if (firstAvailable !== undefined) {
+        nextIndex = firstAvailable;
+        nextAudio = audioQueueRef.current.find(a => a.index === nextIndex);
+      }
+    }
+
+    if (nextAudio) {
+      isPlayingRef.current = true;
+      currentAudioIndexRef.current = nextIndex;
+      setIsSpeaking(true);
+
+      nextAudio.audio.onended = () => {
+        isPlayingRef.current = false;
+        const hasMore = audioQueueRef.current.some(a => a.index > nextIndex);
+        if (hasMore) {
+          playNextAudio();
+        } else if (streamingCompleteRef.current) {
+          setIsSpeaking(false);
+        }
+      };
+
+      nextAudio.audio.onerror = () => {
+        isPlayingRef.current = false;
+        playNextAudio();
+      };
+
+      nextAudio.audio.play().catch(() => {
+        isPlayingRef.current = false;
+        playNextAudio();
+      });
+    } else if (streamingCompleteRef.current) {
+      setIsSpeaking(false);
+    }
+  };
+
   const handleSend = async () => {
     console.log('📤 handleSend called');
     console.log('📤 uploadedFiles:', uploadedFiles.length, 'files');
@@ -617,6 +803,12 @@ export default function MaosTalk() {
     }
 
     if ((!message.trim() && uploadedFiles.length === 0) || isLoading) return;
+
+    // Use streaming for simple text queries (no files) - faster response!
+    if (useStreaming && uploadedFiles.length === 0 && message.trim()) {
+      console.log('⚡ Using STREAMING mode for faster response');
+      return handleSendStreaming(message.trim());
+    }
 
     let userContent = message.trim();
     const imagesToSend: string[] = [];
@@ -748,12 +940,12 @@ export default function MaosTalk() {
       {isMinimized && (
         <button
           onClick={() => setIsMinimized(false)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-green-600 to-green-400 flex items-center justify-center shadow-2xl z-50 hover:scale-110 transition-transform"
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center shadow-2xl z-50 hover:scale-110 transition-transform"
           title="Ouvrir MAOS Chat"
         >
           <MessageSquare className="w-6 h-6 text-white" />
           {messages.length > 1 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-danger-400 rounded-full text-white text-xs flex items-center justify-center">
               {messages.length - 1}
             </span>
           )}
@@ -778,14 +970,14 @@ export default function MaosTalk() {
                     className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     {msg.role === "assistant" && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-600 to-green-400 flex items-center justify-center flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center flex-shrink-0">
                         <Sparkles className="w-4 h-4 text-white" />
                       </div>
                     )}
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-2 ${
                         msg.role === "user"
-                          ? "bg-green-600 text-white"
+                          ? "bg-success-400 text-white"
                           : "bg-muted"
                       }`}
                       dir={msg.direction || 'ltr'}
@@ -798,7 +990,7 @@ export default function MaosTalk() {
                               key={fileIdx}
                               className={`flex items-center gap-2 text-xs px-2 py-1 rounded ${
                                 msg.role === "user"
-                                  ? "bg-green-700/50"
+                                  ? "bg-success-500/50"
                                   : "bg-muted-foreground/10"
                               }`}
                             >
@@ -817,7 +1009,7 @@ export default function MaosTalk() {
                             console.log('📄 Download button clicked for:', msg.pdf!.filename);
                             downloadPDF(msg.pdf!.data, msg.pdf!.filename);
                           }}
-                          className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                          className="mt-3 bg-success-400 hover:bg-success-500 text-white"
                           size="sm"
                         >
                           <Download className="w-4 h-4 mr-2" />
@@ -829,7 +1021,7 @@ export default function MaosTalk() {
                 ))}
                 {isLoading && (
                   <div className="flex gap-3 justify-start">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-600 to-green-400 flex items-center justify-center flex-shrink-0 animate-pulse">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center flex-shrink-0 animate-pulse">
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
                     <div className="bg-muted rounded-2xl px-4 py-2">
@@ -855,7 +1047,7 @@ export default function MaosTalk() {
                     f.analyzing
                       ? 'bg-yellow-100 border border-yellow-300 dark:bg-yellow-900/30'
                       : f.content
-                        ? 'bg-green-100 border border-green-300 dark:bg-green-900/30'
+                        ? 'bg-success-50 border border-success-200 dark:bg-green-900/30'
                         : 'bg-muted'
                   }`}
                 >
@@ -869,11 +1061,11 @@ export default function MaosTalk() {
                   <span className="max-w-32 truncate">{f.file.name}</span>
                   {f.analyzing && <span className="text-yellow-600 text-xs">Analyse...</span>}
                   {f.content && !f.analyzing && (
-                    <span className="text-green-600 text-xs font-medium">✓ Prêt ({Math.round(f.content.length / 1024)}KB)</span>
+                    <span className="text-success-400 text-xs font-medium">✓ Prêt ({Math.round(f.content.length / 1024)}KB)</span>
                   )}
                   <button
                     onClick={() => removeFile(f.file)}
-                    className="text-muted-foreground hover:text-red-500"
+                    className="text-muted-foreground hover:text-danger-400"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -884,7 +1076,7 @@ export default function MaosTalk() {
 
           <div className="flex items-end gap-2">
             <div className="flex-shrink-0 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-600 to-green-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center">
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 text-white animate-spin" />
                 ) : isSpeaking ? (
@@ -910,14 +1102,14 @@ export default function MaosTalk() {
                 }
               }}
               className={`h-10 w-10 rounded-lg flex-shrink-0 mb-2 ${
-                isSpeaking ? 'animate-pulse' : ttsEnabled ? 'bg-green-600 hover:bg-green-700' : ''
+                isSpeaking ? 'animate-pulse' : ttsEnabled ? 'bg-success-400 hover:bg-success-500' : ''
               }`}
               title={isSpeaking ? "Arrêter MAOS" : ttsEnabled ? "Désactiver la voix" : "Activer la voix"}
             >
               {isSpeaking ? (
                 <VolumeX className="h-5 w-5" />
               ) : (
-                <Volume2 className={`h-5 w-5 ${ttsEnabled ? 'text-white' : 'text-green-600'}`} />
+                <Volume2 className={`h-5 w-5 ${ttsEnabled ? 'text-white' : 'text-success-400'}`} />
               )}
             </Button>
 
@@ -927,10 +1119,10 @@ export default function MaosTalk() {
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              className="h-10 w-10 rounded-lg flex-shrink-0 mb-2 hover:bg-green-50 hover:border-green-600"
+              className="h-10 w-10 rounded-lg flex-shrink-0 mb-2 hover:bg-success-50 hover:border-success-400"
               title="Joindre un fichier"
             >
-              <Upload className="h-5 w-5 text-green-600" />
+              <Upload className="h-5 w-5 text-success-400" />
             </Button>
 
             {/* Bouton Micro */}
@@ -942,7 +1134,7 @@ export default function MaosTalk() {
               className={`h-10 w-10 rounded-lg flex-shrink-0 mb-2 ${
                 isRecording
                   ? "animate-pulse"
-                  : "hover:bg-green-50 hover:border-green-600"
+                  : "hover:bg-success-50 hover:border-success-400"
               }`}
               title={isRecording ? "Arrêter l'enregistrement" : "Parler à MAOS"}
             >
@@ -951,7 +1143,7 @@ export default function MaosTalk() {
               ) : isRecording ? (
                 <MicOff className="h-5 w-5" />
               ) : (
-                <Mic className="h-5 w-5 text-green-600" />
+                <Mic className="h-5 w-5 text-success-400" />
               )}
             </Button>
 
@@ -964,7 +1156,7 @@ export default function MaosTalk() {
                 onFocus={() => { setIsExpanded(true); resetActivityTimer(); }}
                 placeholder={isRecording ? "🎤 Enregistrement en cours..." : "Parle à MAOS..."}
                 disabled={isLoading || isRecording}
-                className="w-full resize-none rounded-xl border bg-background px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-green-600 transition-all overflow-hidden scrollbar-hide disabled:opacity-50"
+                className="w-full resize-none rounded-xl border bg-background px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-success-400 transition-all overflow-hidden scrollbar-hide disabled:opacity-50"
                 rows={1}
                 style={{
                   minHeight: "48px",
@@ -976,7 +1168,7 @@ export default function MaosTalk() {
                 size="icon"
                 onClick={handleSend}
                 disabled={(!message.trim() && uploadedFiles.length === 0) || isLoading || uploadedFiles.some(f => f.analyzing)}
-                className="absolute right-2 bottom-2 h-8 w-8 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all"
+                className="absolute right-2 bottom-2 h-8 w-8 rounded-lg bg-success-400 hover:bg-success-500 disabled:opacity-50 transition-all"
                 title={uploadedFiles.some(f => f.analyzing) ? "Analyse du fichier en cours..." : "Envoyer"}
               >
                 {uploadedFiles.some(f => f.analyzing) ? (
@@ -998,7 +1190,14 @@ export default function MaosTalk() {
                 {ttsEnabled ? '🔊 Voix' : '🔇 Muet'}
               </p>
               <span className="text-xs text-muted-foreground">•</span>
-              <p className="text-xs text-muted-foreground">🌐 Auto</p>
+              <button
+                onClick={() => setUseStreaming(!useStreaming)}
+                className={`text-xs flex items-center gap-1 ${useStreaming ? 'text-success-400 font-medium' : 'text-muted-foreground'}`}
+                title={useStreaming ? 'Mode streaming activé (réponses rapides)' : 'Activer le streaming'}
+              >
+                <Zap className={`w-3 h-3 ${useStreaming ? 'fill-current' : ''}`} />
+                {useStreaming ? 'Stream' : 'Standard'}
+              </button>
               <span className="text-xs text-muted-foreground">•</span>
               {/* Boutons Réduire et Masquer - toujours visibles */}
               {isExpanded ? (
@@ -1016,7 +1215,7 @@ export default function MaosTalk() {
                   size="sm"
                   variant="ghost"
                   onClick={() => { setIsExpanded(true); resetActivityTimer(); }}
-                  className="h-5 px-2 text-xs text-green-600"
+                  className="h-5 px-2 text-xs text-success-400"
                 >
                   <Maximize2 className="w-3 h-3 mr-1" />
                   Historique
@@ -1032,7 +1231,7 @@ export default function MaosTalk() {
                 Masquer
               </Button>
             </div>
-            <p className="text-xs text-green-600 font-medium">
+            <p className="text-xs text-success-400 font-medium">
               {isRecording ? "🔴 Enregistrement..." : isTranscribing ? "🎤 Transcription..." : isSpeaking ? "🗣️ MAOS parle..." : "💚 En ligne"}
             </p>
           </div>

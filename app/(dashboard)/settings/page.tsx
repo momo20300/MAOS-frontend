@@ -1,20 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/context/auth-context";
-import { Settings, User, Bell, Shield, Database, LogOut, Building, Loader2 } from "lucide-react";
+import { Settings, User, Bell, Shield, Database, LogOut, Building, Loader2, Bot, Users, Briefcase, Package, UserCog, FileText, Target } from "lucide-react";
+
+interface AgentStats {
+  totalAgents: number;
+  byDepartment: Record<string, number>;
+  byRole: Record<string, number>;
+  uniqueKeywords: number;
+  uniqueDoctypes: number;
+}
 
 export default function SettingsPage() {
   const { user, logout, isLoading } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [agentStats, setAgentStats] = useState<AgentStats | null>(null);
+  const [loadingAgents, setLoadingAgents] = useState(true);
+
+  useEffect(() => {
+    const fetchAgentStats = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/agents/stats`, {
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setAgentStats(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch agent stats:', error);
+      } finally {
+        setLoadingAgents(false);
+      }
+    };
+    fetchAgentStats();
+  }, []);
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const departmentIcons: Record<string, React.ReactNode> = {
+    FINANCE: <Briefcase className="h-4 w-4" />,
+    CRM: <Users className="h-4 w-4" />,
+    PROCUREMENT: <Package className="h-4 w-4" />,
+    INVENTORY: <Package className="h-4 w-4" />,
+    HR: <UserCog className="h-4 w-4" />,
+    DOCUMENTS: <FileText className="h-4 w-4" />,
+    EXECUTIVE: <Target className="h-4 w-4" />,
+  };
+
+  const departmentNames: Record<string, string> = {
+    FINANCE: 'Finance & Comptabilite',
+    CRM: 'Commercial & CRM',
+    PROCUREMENT: 'Achats & Fournisseurs',
+    INVENTORY: 'Stock & Logistique',
+    HR: 'RH & Organisation',
+    DOCUMENTS: 'Documents & Audit',
+    EXECUTIVE: 'Strategie & Decision',
   };
 
   const handleSave = async () => {
@@ -144,7 +195,7 @@ export default function SettingsPage() {
                   Backend API: localhost:4000
                 </div>
               </div>
-              <Badge variant="default" className="bg-green-600">Connecte</Badge>
+              <Badge variant="default" className="bg-success-400">Connecte</Badge>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="api-url">URL Backend MAOS</Label>
@@ -221,6 +272,80 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              <CardTitle>Systeme Multi-Agents MAOS</CardTitle>
+            </div>
+            <CardDescription>
+              {agentStats?.totalAgents || 50} agents IA hierarchiques repartis en 7 departements
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loadingAgents ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : agentStats ? (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {Object.entries(agentStats.byDepartment || {}).map(([dept, count]) => (
+                    <div
+                      key={dept}
+                      className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
+                    >
+                      {departmentIcons[dept] || <Bot className="h-4 w-4" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground truncate">
+                          {departmentNames[dept] || dept}
+                        </div>
+                        <div className="font-semibold">{count} agents</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t pt-4 mt-4">
+                  <div className="text-sm font-medium mb-2">Hierarchie</div>
+                  <div className="flex gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">Employes</Badge>
+                      <span>{agentStats.byRole?.EMPLOYEE || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">Chefs</Badge>
+                      <span>{agentStats.byRole?.CHIEF || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge>Directeurs</Badge>
+                      <span>{agentStats.byRole?.DIRECTOR || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <div className="text-2xl font-bold">50</div>
+                  <div className="text-xs text-muted-foreground">Agents Total</div>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <div className="text-2xl font-bold">7</div>
+                  <div className="text-xs text-muted-foreground">Departements</div>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <div className="text-2xl font-bold">3</div>
+                  <div className="text-xs text-muted-foreground">Niveaux</div>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <div className="text-2xl font-bold">100%</div>
+                  <div className="text-xs text-muted-foreground">Donnees</div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
               <CardTitle>A propos de MAOS</CardTitle>
             </div>
@@ -232,7 +357,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Agents IA</span>
-              <span className="font-medium">6 agents</span>
+              <span className="font-medium">{agentStats?.totalAgents || 50} agents</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Utilisateur</span>

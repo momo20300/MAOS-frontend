@@ -53,7 +53,7 @@ export default function Home() {
         marginBottom: '42px',
       }}>
         <a href="/login" style={{
-          background: '#22c55e',
+          background: '#6bbc8e',
           color: '#fff',
           padding: '18px 48px',
           borderRadius: '10px',
@@ -90,8 +90,8 @@ export default function Home() {
       }}>
         <strong>Stop managing software.</strong><br />
         Start running your company.<br />
-        <a href="/login" style={{ color: '#22c55e', marginLeft: '10px', textDecoration: 'none' }}>Log in</a>
-        <a href="/talk" style={{ color: '#22c55e', marginLeft: '10px', textDecoration: 'none' }}>Talk to MAOS</a>
+        <a href="/login" style={{ color: '#6bbc8e', marginLeft: '10px', textDecoration: 'none' }}>Log in</a>
+        <a href="/talk" style={{ color: '#6bbc8e', marginLeft: '10px', textDecoration: 'none' }}>Talk to MAOS</a>
       </div>
 
     </main>

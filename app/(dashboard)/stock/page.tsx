@@ -124,7 +124,7 @@ export default function StockPage() {
     if (value < 50) {
       return <Badge variant="secondary" className="rounded-lg">Bas</Badge>;
     }
-    return <Badge variant="default" className="rounded-lg bg-green-500">OK</Badge>;
+    return <Badge variant="default" className="rounded-lg bg-success-400">OK</Badge>;
   };
 
   if (loading) {
@@ -145,8 +145,8 @@ export default function StockPage() {
         <div
           className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-sm animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
-              ? "border-green-200 bg-green-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
-              : "border-red-200 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
+              ? "border-success-100 bg-success-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
+              : "border-danger-100 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
           }`}
         >
           {toast.message}
@@ -181,10 +181,10 @@ export default function StockPage() {
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Stock Critique</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertTriangle className="h-4 w-4 text-danger-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{criticalItems.length}</div>
+            <div className="text-2xl font-bold text-danger-400">{criticalItems.length}</div>
             <p className="text-xs text-muted-foreground">Articles sous seuil</p>
           </CardContent>
         </Card>

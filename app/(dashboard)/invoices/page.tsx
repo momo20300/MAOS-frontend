@@ -176,8 +176,8 @@ export default function InvoicesPage() {
         <div
           className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-sm animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
-              ? "border-green-200 bg-green-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
-              : "border-red-200 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
+              ? "border-success-100 bg-success-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
+              : "border-danger-100 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
           }`}
         >
           {toast.message}
@@ -203,10 +203,10 @@ export default function InvoicesPage() {
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Facture</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success-400">
               {totalAmount.toLocaleString()} MAD
             </div>
             <p className="text-xs text-muted-foreground">{submittedInvoices.length} factures</p>
@@ -215,10 +215,10 @@ export default function InvoicesPage() {
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">A Recouvrer</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <TrendingDown className="h-4 w-4 text-danger-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-danger-400">
               {totalOutstanding.toLocaleString()} MAD
             </div>
             <p className="text-xs text-muted-foreground">En attente</p>
@@ -237,7 +237,7 @@ export default function InvoicesPage() {
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Taux de Paiement</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -339,7 +339,7 @@ export default function InvoicesPage() {
                     {(invoice.grand_total || 0).toLocaleString()} MAD
                   </div>
                   {invoice.outstanding_amount > 0 && (
-                    <div className="text-sm text-red-600">
+                    <div className="text-sm text-danger-400">
                       Reste: {invoice.outstanding_amount.toLocaleString()} MAD
                     </div>
                   )}

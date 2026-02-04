@@ -16,8 +16,8 @@ export function Toast({ title, description, variant = "default", onClose }: Toas
     <div
       className={cn(
         "fixed bottom-4 right-4 z-50 flex items-start gap-3 rounded-xl border p-4 shadow-lg backdrop-blur-sm transition-all animate-in slide-in-from-bottom-5",
-        variant === "success" && "border-green-200 bg-green-50/90 dark:border-green-800 dark:bg-green-950/90",
-        variant === "error" && "border-red-200 bg-red-50/90 dark:border-red-800 dark:bg-red-950/90",
+        variant === "success" && "border-success-100 bg-success-50/90 dark:border-green-800 dark:bg-green-950/90",
+        variant === "error" && "border-danger-100 bg-red-50/90 dark:border-red-800 dark:bg-red-950/90",
         variant === "default" && "border-border bg-background/90"
       )}
     >
@@ -32,8 +32,8 @@ export function Toast({ title, description, variant = "default", onClose }: Toas
         {description && (
           <p className={cn(
             "text-sm mt-1",
-            variant === "success" && "text-green-700 dark:text-green-200",
-            variant === "error" && "text-red-700 dark:text-red-200",
+            variant === "success" && "text-success-500 dark:text-success-100",
+            variant === "error" && "text-danger-500 dark:text-danger-100",
             variant === "default" && "text-muted-foreground"
           )}>
             {description}

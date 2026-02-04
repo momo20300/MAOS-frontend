@@ -110,8 +110,10 @@ export function ProductForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <form onSubmit={handleSubmit}>
+          {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
+          <DocumentHeader title="Produit (ITEM)" />
+
           <DialogHeader>
-            <DocumentHeader title="Produit (ITEM)" />
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
               {mode === "create" ? "Nouveau Produit" : "Modifier le Produit"}

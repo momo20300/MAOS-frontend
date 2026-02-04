@@ -65,7 +65,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 142 76% 36%;
+    --primary: 146 37% 58%;             /* #6bbc8e - Nouveau vert MAOS */
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -73,35 +73,35 @@
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 342 37% 61%;         /* #c3758c - Nouveau rouge MAOS */
+    --destructive-foreground: 0 0% 100%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 142 76% 36%;
+    --ring: 146 37% 58%;                /* #6bbc8e */
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Thème ERPNext Dark - Noir */
-    --background: 220 10% 6%;           /* #0d0f11 - Fond noir ERPNext */
+    /* Theme MAOS Dark */
+    --background: 220 10% 6%;           /* #0d0f11 - Fond noir */
     --foreground: 210 14% 89%;          /* #d1d8dd - Texte clair */
-    --card: 220 10% 9%;                 /* #141619 - Cartes légèrement plus clair */
+    --card: 220 10% 9%;                 /* #141619 - Cartes */
     --card-foreground: 210 14% 89%;
     --popover: 220 10% 9%;
     --popover-foreground: 210 14% 89%;
-    --primary: 142 76% 36%;             /* Vert MAOS conservé */
+    --primary: 146 37% 58%;             /* #6bbc8e - Nouveau vert MAOS */
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 10% 12%;           /* #1a1d20 - Éléments secondaires */
+    --secondary: 220 10% 12%;           /* #1a1d20 */
     --secondary-foreground: 210 14% 89%;
     --muted: 220 10% 12%;
-    --muted-foreground: 215 14% 60%;    /* Texte atténué */
+    --muted-foreground: 215 14% 60%;
     --accent: 220 10% 14%;
     --accent-foreground: 210 14% 89%;
-    --destructive: 0 62.8% 40%;
-    --destructive-foreground: 210 14% 89%;
-    --border: 220 10% 16%;              /* #242729 - Bordures */
+    --destructive: 342 37% 61%;         /* #c3758c - Nouveau rouge MAOS */
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 10% 16%;              /* #242729 */
     --input: 220 10% 16%;
-    --ring: 142 76% 36%;
+    --ring: 146 37% 58%;                /* #6bbc8e */
   }
 }
 
@@ -194,7 +194,7 @@
 }
 
 .cta a {
-  background: #22c55e;
+  background: #6bbc8e;
   color: #fff;
   padding: 18px 48px;
   border-radius: 10px;
@@ -205,7 +205,7 @@
 }
 
 .cta a:hover {
-  background: #16a34a;
+  background: #5aa87c;
 }
 
 .subtitle {
@@ -229,7 +229,7 @@
 }
 
 .footer a {
-  color: #22c55e;
+  color: #6bbc8e;
   margin-left: 10px;
   text-decoration: none;
 }

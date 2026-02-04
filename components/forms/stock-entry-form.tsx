@@ -117,8 +117,10 @@ export function StockEntryForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
+          {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
+          <DocumentHeader title="Mouvement de Stock (STE)" />
+
           <DialogHeader>
-            <DocumentHeader title="Mouvement de Stock (STE)" />
             <DialogTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
               Nouveau Mouvement de Stock

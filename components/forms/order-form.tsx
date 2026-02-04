@@ -121,8 +121,10 @@ export function OrderForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
+          {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
+          <DocumentHeader title={type === "order" ? "Commande (SO)" : "Devis (QTN)"} />
+
           <DialogHeader>
-            <DocumentHeader title={type === "order" ? "Commande (SO)" : "Devis (QTN)"} />
             <DialogTitle className="flex items-center gap-2">
               <Icon className="h-5 w-5" />
               {title}

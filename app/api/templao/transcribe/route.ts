@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// OpenAI API Key from environment
-const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
-
 export async function POST(request: NextRequest) {
+  // Use MAOS_OPENAI_KEY to avoid system env override, fallback to OPENAI_API_KEY
+  const OPENAI_KEY = process.env.MAOS_OPENAI_KEY || process.env.OPENAI_API_KEY || '';
+
+  // Debug: log key info
+  console.log('🔑 MAOS_OPENAI_KEY length:', OPENAI_KEY.length);
+  console.log('🔑 MAOS_OPENAI_KEY prefix:', OPENAI_KEY.substring(0, 20) + '...');
+
+  if (!OPENAI_KEY || OPENAI_KEY.length < 20) {
+    console.error('❌ OPENAI_API_KEY not configured or too short!');
+    return NextResponse.json(
+      { error: 'OpenAI API key not configured' },
+      { status: 500 }
+    );
+  }
+
   try {
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File;

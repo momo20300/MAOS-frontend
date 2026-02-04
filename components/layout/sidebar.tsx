@@ -321,11 +321,9 @@ export default function Sidebar() {
               )}
             </div>
           </div>
-          {user.currentTenant && (
-            <Badge variant="outline" className="mt-2 text-xs">
-              {user.currentTenant.role}
-            </Badge>
-          )}
+          <Badge variant="outline" className="mt-2 text-xs">
+            {user.currentTenant?.role || userRole}
+          </Badge>
         </div>
       )}
 

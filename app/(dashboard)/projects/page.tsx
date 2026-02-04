@@ -103,8 +103,8 @@ export default function ProjectsPage() {
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg transition-all duration-300 ${
           toast.type === "success"
-            ? "bg-green-500 text-white"
-            : "bg-red-500 text-white"
+            ? "bg-success-400 text-white"
+            : "bg-danger-400 text-white"
         }`}>
           {toast.message}
         </div>
@@ -153,10 +153,10 @@ export default function ProjectsPage() {
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Termines</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{completedCount}</div>
+            <div className="text-2xl font-bold text-success-400">{completedCount}</div>
           </CardContent>
         </Card>
       </div>
@@ -228,7 +228,7 @@ export default function ProjectsPage() {
                       <div
                         className={`h-full rounded-full ${
                           project.percent_complete === 100
-                            ? 'bg-green-500'
+                            ? 'bg-success-400'
                             : project.percent_complete >= 50
                               ? 'bg-yellow-500'
                               : 'bg-blue-500'

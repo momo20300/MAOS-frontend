@@ -88,8 +88,10 @@ export function WorkOrderForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
+          {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
+          <DocumentHeader title="Ordre de Fabrication (WO)" />
+
           <DialogHeader>
-            <DocumentHeader title="Ordre de Fabrication (WO)" />
             <DialogTitle className="flex items-center gap-2">
               <Factory className="h-5 w-5" />
               Nouvel Ordre de Fabrication

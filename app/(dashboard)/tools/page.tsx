@@ -56,7 +56,7 @@ export default function ToolsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       {toast && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-          toast.type === "success" ? "bg-green-500" : "bg-red-500"
+          toast.type === "success" ? "bg-success-400" : "bg-danger-400"
         } text-white`}>
           {toast.message}
         </div>

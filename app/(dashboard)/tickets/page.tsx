@@ -55,7 +55,7 @@ export default function TicketsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       {toast && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-          toast.type === "success" ? "bg-green-500" : "bg-red-500"
+          toast.type === "success" ? "bg-success-400" : "bg-danger-400"
         } text-white`}>
           {toast.message}
         </div>
@@ -93,10 +93,10 @@ export default function TicketsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Résolus</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{tickets.length - openCount}</div>
+            <div className="text-2xl font-bold text-success-400">{tickets.length - openCount}</div>
           </CardContent>
         </Card>
       </div>

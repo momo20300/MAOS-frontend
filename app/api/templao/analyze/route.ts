@@ -162,8 +162,10 @@ async function analyzePDF(
   customPrompt?: string
 ): Promise<{ analysis: string; rawContent: string; extractedData: Record<string, unknown> }> {
   try {
-    // Dynamic import for pdf-parse
-    const pdfParse = (await import('pdf-parse')).default;
+    // Dynamic import for pdf-parse (handle both ESM and CJS exports)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdfParseModule = await import('pdf-parse') as any;
+    const pdfParse = pdfParseModule.default || pdfParseModule;
 
     const pdfData = await pdfParse(buffer);
     const rawContent = pdfData.text || '';
@@ -239,6 +241,7 @@ async function analyzeExcel(
 
     for (const sheetName of sheetNames.slice(0, 5)) { // Limit to 5 sheets
       const sheet = workbook.Sheets[sheetName];
+      if (!sheet) continue; // Skip if sheet not found
       const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
 
       // Convert to readable text

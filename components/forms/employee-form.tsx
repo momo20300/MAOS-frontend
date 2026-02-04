@@ -131,8 +131,10 @@ export function EmployeeForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <form onSubmit={handleSubmit}>
+          {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
+          <DocumentHeader title="Employe (HR-EMP)" />
+
           <DialogHeader>
-            <DocumentHeader title="Employe (HR-EMP)" />
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
               {mode === "create" ? "Nouvel Employe" : "Modifier l'Employe"}

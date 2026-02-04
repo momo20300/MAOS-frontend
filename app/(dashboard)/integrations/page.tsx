@@ -62,7 +62,7 @@ export default function IntegrationsPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       {toast && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-          toast.type === "success" ? "bg-green-500" : "bg-red-500"
+          toast.type === "success" ? "bg-success-400" : "bg-danger-400"
         } text-white`}>
           {toast.message}
         </div>
@@ -90,7 +90,7 @@ export default function IntegrationsPage() {
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full ${
                   integration.status === 'configured'
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-green-100 text-success-500'
                     : 'bg-yellow-100 text-yellow-700'
                 }`}>
                   {integration.status === 'configured' ? 'Configuré' : 'À configurer'}

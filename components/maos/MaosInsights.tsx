@@ -53,15 +53,15 @@ export default function MaosInsights({ className, showRefresh = true }: MaosInsi
   const getAlertIcon = (type: InsightAlert["type"]) => {
     switch (type) {
       case "STOCK_CRITIQUE":
-        return <Package className="h-4 w-4" />;
+        return <Package className="h-3 w-3" />;
       case "IMPAYE_30J":
-        return <FileText className="h-4 w-4" />;
+        return <FileText className="h-3 w-3" />;
       case "CLIENT_INACTIF":
-        return <Users className="h-4 w-4" />;
+        return <Users className="h-3 w-3" />;
       case "MARGE_FAIBLE":
-        return <TrendingUp className="h-4 w-4" />;
+        return <TrendingUp className="h-3 w-3" />;
       default:
-        return <AlertCircle className="h-4 w-4" />;
+        return <AlertCircle className="h-3 w-3" />;
     }
   };
 
@@ -86,15 +86,15 @@ export default function MaosInsights({ className, showRefresh = true }: MaosInsi
   if (isLoading) {
     return (
       <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-yellow-500" />
+        <CardHeader className="pb-2 pt-4">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Lightbulb className="h-4 w-4 text-yellow-500" />
             MAOS Insights
           </CardTitle>
-          <CardDescription>Chargement du briefing...</CardDescription>
+          <CardDescription className="text-xs">Chargement...</CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+        <CardContent className="flex items-center justify-center py-4">
+          <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
     );
@@ -102,44 +102,45 @@ export default function MaosInsights({ className, showRefresh = true }: MaosInsi
 
   return (
     <Card className={className}>
-      <CardHeader>
+      <CardHeader className="pb-2 pt-4">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-yellow-500" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Lightbulb className="h-4 w-4 text-yellow-500" />
               MAOS Insights
             </CardTitle>
-            <CardDescription>Briefing quotidien et alertes</CardDescription>
+            <CardDescription className="text-xs">Briefing quotidien</CardDescription>
           </div>
           {showRefresh && (
             <Button
               variant="ghost"
               size="sm"
+              className="h-7 w-7 p-0"
               onClick={() => fetchInsights()}
               disabled={isRefreshing}
             >
-              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+              <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-1.5 pt-0 pb-3">
         {/* Snapshot rapide */}
         {insights?.snapshot && (
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="p-2 rounded-lg bg-muted/50 text-center">
-              <DollarSign className="h-4 w-4 mx-auto text-success-400 mb-1" />
-              <p className="text-lg font-bold text-success-400">
+          <div className="grid grid-cols-2 gap-1.5 mb-2">
+            <div className="p-1.5 rounded-lg bg-muted/50 text-center">
+              <DollarSign className="h-3.5 w-3.5 mx-auto text-success-400" />
+              <p className="text-sm font-bold text-success-400">
                 {(insights.snapshot.todayRevenue || 0).toLocaleString()} MAD
               </p>
-              <p className="text-xs text-muted-foreground">CA du jour</p>
+              <p className="text-[10px] text-muted-foreground">CA du jour</p>
             </div>
-            <div className="p-2 rounded-lg bg-muted/50 text-center">
-              <Users className="h-4 w-4 mx-auto text-primary mb-1" />
-              <p className="text-lg font-bold text-primary">
+            <div className="p-1.5 rounded-lg bg-muted/50 text-center">
+              <Users className="h-3.5 w-3.5 mx-auto text-primary" />
+              <p className="text-sm font-bold text-primary">
                 {insights.snapshot.totalCustomers || 0}
               </p>
-              <p className="text-xs text-muted-foreground">Clients</p>
+              <p className="text-[10px] text-muted-foreground">Clients</p>
             </div>
           </div>
         )}
@@ -147,29 +148,29 @@ export default function MaosInsights({ className, showRefresh = true }: MaosInsi
         {/* Alertes */}
         {insights?.alerts && insights.alerts.length > 0 && (
           <>
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <AlertTriangle className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <AlertTriangle className="h-3 w-3" />
               Alertes ({insights.alerts.length})
             </div>
             {insights.alerts.map((alert, index) => (
               <div
                 key={index}
                 className={cn(
-                  "p-3 rounded-lg border",
+                  "p-2 rounded-lg border",
                   getAlertStyle(alert.priority)
                 )}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm flex items-center gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-xs flex items-center gap-1.5">
                     {getAlertIcon(alert.type)}
                     {alert.title}
                   </span>
-                  <Badge variant={alert.priority === "HIGH" ? "destructive" : "secondary"} className="text-xs">
+                  <Badge variant={alert.priority === "HIGH" ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0">
                     {alert.priority === "HIGH" ? "Urgent" : "Attention"}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mb-1">{alert.detail}</p>
-                <p className="text-xs font-medium text-primary">{alert.suggestedAction}</p>
+                <p className="text-[10px] text-muted-foreground">{alert.detail}</p>
+                <p className="text-[10px] font-medium text-primary">{alert.suggestedAction}</p>
               </div>
             ))}
           </>
@@ -178,23 +179,23 @@ export default function MaosInsights({ className, showRefresh = true }: MaosInsi
         {/* Opportunites */}
         {insights?.opportunities && insights.opportunities.length > 0 && (
           <>
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mt-4">
-              <TrendingUp className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-2">
+              <TrendingUp className="h-3 w-3" />
               Opportunites ({insights.opportunities.length})
             </div>
             {insights.opportunities.map((opp, index) => (
               <div
                 key={index}
-                className="p-3 rounded-lg bg-success-50 dark:bg-green-950/20 border border-success-100 dark:border-success-900"
+                className="p-2 rounded-lg bg-success-50 dark:bg-green-950/20 border border-success-100 dark:border-success-900"
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm text-green-900 dark:text-green-100">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-xs text-green-900 dark:text-green-100">
                     {opp.title}
                   </span>
                   {getEffortBadge(opp.effort)}
                 </div>
-                <p className="text-sm text-success-500 dark:text-success-100">{opp.impact}</p>
-                <p className="text-xs text-muted-foreground mt-1">{opp.detail}</p>
+                <p className="text-xs text-success-500 dark:text-success-100">{opp.impact}</p>
+                <p className="text-[10px] text-muted-foreground">{opp.detail}</p>
               </div>
             ))}
           </>
@@ -203,16 +204,16 @@ export default function MaosInsights({ className, showRefresh = true }: MaosInsi
         {/* Etat vide */}
         {(!insights?.alerts || insights.alerts.length === 0) &&
           (!insights?.opportunities || insights.opportunities.length === 0) && (
-            <div className="text-center py-4 text-muted-foreground">
-              <Lightbulb className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Aucune alerte ou opportunite</p>
-              <p className="text-xs mt-1">MAOS analyse vos donnees en continu</p>
+            <div className="text-center py-2 text-muted-foreground">
+              <Lightbulb className="h-6 w-6 mx-auto mb-1 opacity-50" />
+              <p className="text-xs">Aucune alerte ou opportunite</p>
+              <p className="text-[10px]">MAOS analyse vos donnees en continu</p>
             </div>
           )}
 
         {/* Timestamp */}
         {insights?.generatedAt && (
-          <p className="text-xs text-muted-foreground text-right pt-2 border-t">
+          <p className="text-[10px] text-muted-foreground text-right pt-1 border-t">
             Actualise {new Date(insights.generatedAt).toLocaleTimeString("fr-FR")}
           </p>
         )}

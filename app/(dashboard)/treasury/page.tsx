@@ -27,19 +27,19 @@ export default function TreasuryPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Encaissements</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <TrendingUp className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">-- MAD</div>
+            <div className="text-2xl font-bold text-success-400">-- MAD</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Décaissements</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-500" />
+            <TrendingDown className="h-4 w-4 text-danger-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">-- MAD</div>
+            <div className="text-2xl font-bold text-danger-400">-- MAD</div>
           </CardContent>
         </Card>
       </div>

@@ -112,8 +112,10 @@ export function CustomerForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
+          {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
+          <DocumentHeader title="Client (CUST)" />
+
           <DialogHeader>
-            <DocumentHeader title="Client (CUST)" />
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
               {mode === "create" ? "Nouveau Client" : "Modifier le Client"}

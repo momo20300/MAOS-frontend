@@ -54,7 +54,34 @@ const config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))"
-        }
+        },
+        // MAOS Custom Colors
+        success: {
+          DEFAULT: "#6bbc8e",
+          50: "#f0f9f4",
+          100: "#dcf1e5",
+          200: "#bbe3cd",
+          300: "#8dcfab",
+          400: "#6bbc8e",
+          500: "#3d9967",
+          600: "#2d7a51",
+          700: "#266243",
+          800: "#224e38",
+          900: "#1d4030",
+        },
+        danger: {
+          DEFAULT: "#c3758c",
+          50: "#fdf2f5",
+          100: "#fce7ed",
+          200: "#f9d0dc",
+          300: "#f4abbe",
+          400: "#eb7a99",
+          500: "#c3758c",
+          600: "#c74b6f",
+          700: "#a93a5a",
+          800: "#8d334c",
+          900: "#772f44",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -103,3 +103,116 @@ export function fileToBase64(file: File): Promise<string> {
     reader.onerror = error => reject(error);
   });
 }
+
+/**
+ * Streaming callbacks for real-time response
+ */
+export interface StreamingCallbacks {
+  onTextChunk: (text: string) => void;
+  onSentenceComplete: (sentence: string, index: number) => void;
+  onAudioReady: (audioBase64: string, index: number) => void;
+  onComplete: (fullText: string, processingTime: number, audioCount?: number) => void;
+  onError: (error: string) => void;
+}
+
+/**
+ * Send message with streaming response using Server-Sent Events
+ * Returns faster perceived response by streaming text + audio in parallel
+ */
+export async function sendMessageStreamingSSE(
+  message: string,
+  callbacks: StreamingCallbacks,
+  options?: { wantAudio?: boolean }
+): Promise<void> {
+  const token = localStorage.getItem('maos_access_token');
+  if (!token) {
+    callbacks.onError('Non authentifié');
+    return;
+  }
+
+  try {
+    const response = await fetch('http://localhost:4000/api/stream/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify({
+        message,
+        wantAudio: options?.wantAudio ?? true,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Parse SSE events
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+      let eventType = '';
+      let eventData = '';
+
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice(7).trim();
+        } else if (line.startsWith('data: ')) {
+          eventData = line.slice(6);
+          if (eventType && eventData) {
+            try {
+              const data = JSON.parse(eventData);
+              handleSSEEvent(eventType, data, callbacks);
+            } catch (e) {
+              console.warn('Failed to parse SSE data:', eventData);
+            }
+            eventType = '';
+            eventData = '';
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Streaming error:', error);
+    callbacks.onError(error instanceof Error ? error.message : 'Erreur de streaming');
+  }
+}
+
+function handleSSEEvent(
+  event: string,
+  data: any,
+  callbacks: StreamingCallbacks
+): void {
+  switch (event) {
+    case 'text':
+      callbacks.onTextChunk(data.chunk);
+      break;
+    case 'sentence':
+      callbacks.onSentenceComplete(data.text, data.index);
+      break;
+    case 'audio':
+      callbacks.onAudioReady(data.data, data.index);
+      break;
+    case 'complete':
+      callbacks.onComplete(data.fullText, data.processingTime || 0, data.audioCount);
+      break;
+    case 'error':
+      callbacks.onError(data.message);
+      break;
+  }
+}

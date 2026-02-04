@@ -86,8 +86,8 @@ export default function PurchaseOrdersPage() {
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg transition-all duration-300 ${
           toast.type === "success"
-            ? "bg-green-500 text-white"
-            : "bg-red-500 text-white"
+            ? "bg-success-400 text-white"
+            : "bg-danger-400 text-white"
         }`}>
           {toast.message}
         </div>
@@ -127,7 +127,7 @@ export default function PurchaseOrdersPage() {
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Montant Total</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalAmount.toLocaleString()} MAD</div>

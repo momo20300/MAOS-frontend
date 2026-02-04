@@ -93,8 +93,8 @@ export default function OpportunitiesPage() {
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg transition-all duration-300 ${
           toast.type === "success"
-            ? "bg-green-500 text-white"
-            : "bg-red-500 text-white"
+            ? "bg-success-400 text-white"
+            : "bg-danger-400 text-white"
         }`}>
           {toast.message}
         </div>
@@ -134,10 +134,10 @@ export default function OpportunitiesPage() {
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Potentiel Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <DollarSign className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{totalAmount.toLocaleString()} MAD</div>
+            <div className="text-2xl font-bold text-success-400">{totalAmount.toLocaleString()} MAD</div>
           </CardContent>
         </Card>
         <Card className="rounded-2xl">
@@ -188,7 +188,7 @@ export default function OpportunitiesPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="text-lg font-bold text-green-600">{opp.opportunity_amount?.toLocaleString()} MAD</div>
+                  <div className="text-lg font-bold text-success-400">{opp.opportunity_amount?.toLocaleString()} MAD</div>
                   {opp.status === 'Open' && (
                     <Button
                       variant="outline"

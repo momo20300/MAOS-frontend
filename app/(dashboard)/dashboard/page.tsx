@@ -101,25 +101,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
-            Bonjour{user ? `, ${user.firstName}` : ''} !
-          </h2>
-          <p className="text-muted-foreground">
-            {user?.currentTenant
-              ? `${user.currentTenant.name} - Vue d'ensemble`
-              : "Vue d'ensemble de votre entreprise"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => fetchKPIs(false)} disabled={isRefreshing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Actualisation...' : 'Actualiser'}
-          </Button>
-        </div>
-      </div>
-
       {error && (
         <ErrorMessage
           title="Erreur de chargement"
@@ -128,65 +109,73 @@ export default function DashboardPage() {
         />
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Chiffre d&apos;Affaires</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="py-2">
+          <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
+            <CardTitle className="text-xs font-medium">Chiffre d&apos;Affaires</CardTitle>
+            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success-400">
+          <CardContent className="py-1 px-4">
+            <div className="text-xl font-bold text-success-400">
               {kpis?.revenue?.toLocaleString() || 0} MAD
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Total des ventes</p>
-            <div className="flex items-center gap-1 mt-2">
-              <TrendingUp className="h-3 w-3 text-success-400" />
-              <span className="text-xs text-success-400 font-medium">+12.5%</span>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] text-muted-foreground">Total des ventes</p>
+              <div className="flex items-center gap-0.5">
+                <TrendingUp className="h-2.5 w-2.5 text-success-400" />
+                <span className="text-[10px] text-success-400 font-medium">+12.5%</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Factures Impayees</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+        <Card className="py-2">
+          <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
+            <CardTitle className="text-xs font-medium">Factures Impayees</CardTitle>
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+          <CardContent className="py-1 px-4">
+            <div className="text-xl font-bold text-yellow-600">
               {kpis?.unpaidInvoices || 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">A recouvrer</p>
-            <Badge variant="outline" className="mt-2 text-xs">En attente</Badge>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] text-muted-foreground">A recouvrer</p>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">En attente</Badge>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Stock Critique</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+        <Card className="py-2">
+          <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
+            <CardTitle className="text-xs font-medium">Stock Critique</CardTitle>
+            <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-danger-400">
+          <CardContent className="py-1 px-4">
+            <div className="text-xl font-bold text-danger-400">
               {kpis?.criticalStock || 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Articles sous seuil</p>
-            <Badge variant="destructive" className="mt-2 text-xs">Alerte</Badge>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] text-muted-foreground">Articles sous seuil</p>
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Alerte</Badge>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Clients Actifs</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+        <Card className="py-2">
+          <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
+            <CardTitle className="text-xs font-medium">Clients Actifs</CardTitle>
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
+          <CardContent className="py-1 px-4">
+            <div className="text-xl font-bold text-primary">
               {kpis?.customers || 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Base clients</p>
-            <div className="flex items-center gap-1 mt-2">
-              <TrendingUp className="h-3 w-3 text-primary" />
-              <span className="text-xs text-primary font-medium">+8.2%</span>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] text-muted-foreground">Base clients</p>
+              <div className="flex items-center gap-0.5">
+                <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                <span className="text-[10px] text-primary font-medium">+8.2%</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -221,24 +210,24 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-yellow-500" />
                   Top Produits
                 </CardTitle>
-                <CardDescription>Meilleurs ventes par revenu</CardDescription>
+                <CardDescription>Meilleurs ventes</CardDescription>
               </div>
               <div className="text-right">
-                <p className="text-xs text-muted-foreground">CA Aujourd&apos;hui</p>
+                <p className="text-sm text-muted-foreground">CA Aujourd&apos;hui</p>
                 <p className="text-lg font-bold text-success-400">
                   {(kpis?.todayRevenue || 0).toLocaleString('fr-FR')} MAD
                 </p>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 pt-0">
             {kpis?.topProducts && kpis.topProducts.length > 0 ? (
               kpis.topProducts.slice(0, 5).map((product, index) => (
                 <div
@@ -246,7 +235,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
                 >
                   <span className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                    "w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold",
                     index === 0 ? "bg-yellow-500/20 text-yellow-600" :
                     index === 1 ? "bg-gray-400/20 text-gray-500" :
                     index === 2 ? "bg-orange-500/20 text-orange-500" :
@@ -268,7 +257,6 @@ export default function DashboardPage() {
             ) : (
               <div className="text-center py-4 text-muted-foreground">
                 <p className="text-sm">Aucune vente enregistree</p>
-                <p className="text-xs mt-1">Les donnees apparaitront ici</p>
               </div>
             )}
           </CardContent>
@@ -278,34 +266,30 @@ export default function DashboardPage() {
         <MaosInsights />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Accès Rapide</CardTitle>
-          <CardDescription>Liens vers les modules MAOS</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <Card className="py-2">
+        <CardContent className="py-1 px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Link href="/invoices">
-              <Button variant="outline" className="w-full">
-                <FileText className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" className="w-full h-8 text-xs">
+                <FileText className="mr-1.5 h-3.5 w-3.5" />
                 Ventes
               </Button>
             </Link>
             <Link href="/purchase-orders">
-              <Button variant="outline" className="w-full">
-                <ShoppingCart className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" className="w-full h-8 text-xs">
+                <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
                 Achats
               </Button>
             </Link>
             <Link href="/products">
-              <Button variant="outline" className="w-full">
-                <Package className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" className="w-full h-8 text-xs">
+                <Package className="mr-1.5 h-3.5 w-3.5" />
                 Stock
               </Button>
             </Link>
             <Link href="/clients">
-              <Button variant="outline" className="w-full">
-                <Users className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" className="w-full h-8 text-xs">
+                <Users className="mr-1.5 h-3.5 w-3.5" />
                 CRM
               </Button>
             </Link>

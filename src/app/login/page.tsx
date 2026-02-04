@@ -23,7 +23,7 @@ export default function Login() {
           placeholder="Password"
         />
 
-        <button className="w-full bg-green-600 py-3 rounded hover:bg-green-700">
+        <button className="w-full bg-success-400 py-3 rounded hover:bg-success-500">
           Sign in
         </button>
       </form>

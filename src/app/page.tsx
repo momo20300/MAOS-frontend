@@ -9,7 +9,7 @@ export default function Home() {
         Multi-Agent Operating System<br/>
         Talk to your company like a CEO
       </p>
-      <Link href="/login" className="px-8 py-3 rounded-lg bg-green-600 hover:bg-green-700">
+      <Link href="/login" className="px-8 py-3 rounded-lg bg-success-400 hover:bg-success-500">
         Start with MAOS
       </Link>
     </main>

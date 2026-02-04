@@ -146,7 +146,7 @@ export default function WorkOrdersPage() {
     };
     const colors: Record<string, string> = {
       "In Process": "bg-yellow-500",
-      "Completed": "bg-green-500",
+      "Completed": "bg-success-400",
     };
     return (
       <Badge variant={variants[status] || "secondary"} className={`rounded-lg ${colors[status] || ""}`}>
@@ -173,8 +173,8 @@ export default function WorkOrdersPage() {
         <div
           className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-sm animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
-              ? "border-green-200 bg-green-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
-              : "border-red-200 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
+              ? "border-success-100 bg-success-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
+              : "border-danger-100 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
           }`}
         >
           {toast.message}
@@ -227,10 +227,10 @@ export default function WorkOrdersPage() {
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Termines</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{completed}</div>
+            <div className="text-2xl font-bold text-success-400">{completed}</div>
           </CardContent>
         </Card>
       </div>

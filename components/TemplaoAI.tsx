@@ -69,12 +69,12 @@ export default function TemplaoAI() {
           {...getRootProps()}
           className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
             isDragActive
-              ? "border-green-600 bg-green-50"
-              : "border-gray-300 hover:border-green-600"
+              ? "border-success-400 bg-success-50"
+              : "border-gray-300 hover:border-success-400"
           }`}
         >
           <input {...getInputProps()} />
-          <Upload className="w-16 h-16 mx-auto mb-4 text-green-600" />
+          <Upload className="w-16 h-16 mx-auto mb-4 text-success-400" />
           {isDragActive ? (
             <p className="text-lg font-medium">Dépose le fichier ici...</p>
           ) : (
@@ -93,7 +93,7 @@ export default function TemplaoAI() {
       {/* Loader */}
       {isAnalyzing && (
         <Card className="p-8 text-center">
-          <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-green-600" />
+          <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-success-400" />
           <p className="text-lg font-medium">Templao AI analyse...</p>
           <p className="text-sm text-muted-foreground mt-2">
             Extraction et analyse en cours
@@ -107,7 +107,7 @@ export default function TemplaoAI() {
           {/* Résumé */}
           <Card className="p-6">
             <div className="flex items-start gap-4">
-              <FileText className="w-8 h-8 text-green-600 flex-shrink-0" />
+              <FileText className="w-8 h-8 text-success-400 flex-shrink-0" />
               <div className="flex-1">
                 <h3 className="text-xl font-bold mb-2">{analysis.filename}</h3>
                 <p className="text-muted-foreground mb-4">{analysis.summary}</p>
@@ -140,7 +140,7 @@ export default function TemplaoAI() {
             <Button
               onClick={handleGenerateAudio}
               disabled={isGeneratingAudio}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-success-400 hover:bg-success-500"
             >
               {isGeneratingAudio ? (
                 <>
@@ -160,7 +160,7 @@ export default function TemplaoAI() {
           {audioUrl && (
             <Card className="p-6">
               <div className="flex items-center gap-4">
-                <Volume2 className="w-8 h-8 text-green-600" />
+                <Volume2 className="w-8 h-8 text-success-400" />
                 <div className="flex-1">
                   <audio controls className="w-full" src={audioUrl} />
                 </div>

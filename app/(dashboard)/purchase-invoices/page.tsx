@@ -57,7 +57,7 @@ export default function PurchaseInvoicesPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       {toast && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-          toast.type === "success" ? "bg-green-500" : "bg-red-500"
+          toast.type === "success" ? "bg-success-400" : "bg-danger-400"
         } text-white`}>
           {toast.message}
         </div>
@@ -86,10 +86,10 @@ export default function PurchaseInvoicesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">À Payer</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <TrendingDown className="h-4 w-4 text-danger-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{totalOutstanding.toLocaleString()} MAD</div>
+            <div className="text-2xl font-bold text-danger-400">{totalOutstanding.toLocaleString()} MAD</div>
           </CardContent>
         </Card>
         <Card>
@@ -127,7 +127,7 @@ export default function PurchaseInvoicesPage() {
                 <div className="text-right">
                   <div className="text-lg font-bold">{invoice.grand_total?.toLocaleString()} MAD</div>
                   {invoice.outstanding_amount > 0 && (
-                    <div className="text-sm text-red-600">Reste: {invoice.outstanding_amount.toLocaleString()} MAD</div>
+                    <div className="text-sm text-danger-400">Reste: {invoice.outstanding_amount.toLocaleString()} MAD</div>
                   )}
                 </div>
               </div>

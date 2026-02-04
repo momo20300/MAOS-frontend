@@ -118,7 +118,7 @@ export default function StockEntriesPage() {
 
   const getTypeBadge = (type: string) => {
     const config: Record<string, { variant: "default" | "secondary" | "destructive"; label: string; color?: string }> = {
-      "Material Receipt": { variant: "default", label: "Entree", color: "bg-green-500" },
+      "Material Receipt": { variant: "default", label: "Entree", color: "bg-success-400" },
       "Material Issue": { variant: "destructive", label: "Sortie" },
       "Material Transfer": { variant: "secondary", label: "Transfert" },
     };
@@ -133,9 +133,9 @@ export default function StockEntriesPage() {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "Material Receipt":
-        return <ArrowUpCircle className="h-5 w-5 text-green-600" />;
+        return <ArrowUpCircle className="h-5 w-5 text-success-400" />;
       case "Material Issue":
-        return <ArrowDownCircle className="h-5 w-5 text-red-600" />;
+        return <ArrowDownCircle className="h-5 w-5 text-danger-400" />;
       case "Material Transfer":
         return <ArrowLeftRight className="h-5 w-5 text-blue-600" />;
       default:
@@ -161,8 +161,8 @@ export default function StockEntriesPage() {
         <div
           className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-sm animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
-              ? "border-green-200 bg-green-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
-              : "border-red-200 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
+              ? "border-success-100 bg-success-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
+              : "border-danger-100 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
           }`}
         >
           {toast.message}
@@ -197,19 +197,19 @@ export default function StockEntriesPage() {
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Entrees</CardTitle>
-            <ArrowUpCircle className="h-4 w-4 text-green-600" />
+            <ArrowUpCircle className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{receipts}</div>
+            <div className="text-2xl font-bold text-success-400">{receipts}</div>
           </CardContent>
         </Card>
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Sorties</CardTitle>
-            <ArrowDownCircle className="h-4 w-4 text-red-600" />
+            <ArrowDownCircle className="h-4 w-4 text-danger-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{issues}</div>
+            <div className="text-2xl font-bold text-danger-400">{issues}</div>
           </CardContent>
         </Card>
         <Card className="rounded-2xl">
