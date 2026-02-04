@@ -27,6 +27,66 @@ export interface DashboardKPIs {
   leads: number;
 }
 
+// ============================================================================
+// MAOS Insights (Proactive Briefing)
+// ============================================================================
+
+export interface InsightAlert {
+  type: 'STOCK_CRITIQUE' | 'IMPAYE_30J' | 'CLIENT_INACTIF' | 'MARGE_FAIBLE';
+  priority: 'HIGH' | 'MEDIUM';
+  title: string;
+  detail: string;
+  suggestedAction: string;
+}
+
+export interface InsightOpportunity {
+  title: string;
+  impact: string;
+  effort: 'FACILE' | 'MOYEN' | 'COMPLEXE';
+  detail: string;
+}
+
+export interface DashboardInsights {
+  snapshot: {
+    todayRevenue: number;
+    totalCustomers: number;
+    totalProducts: number;
+    criticalStockCount: number;
+    overdueInvoicesCount: number;
+  };
+  alerts: InsightAlert[];
+  opportunities: InsightOpportunity[];
+  generatedAt: string;
+}
+
+export async function getDashboardInsights(): Promise<DashboardInsights> {
+  try {
+    const response = await authFetch('/api/dashboard/insights');
+    if (!response.ok) throw new Error('Failed to fetch insights');
+    const data = await response.json();
+    return data.data || {
+      snapshot: {},
+      alerts: [],
+      opportunities: [],
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('Dashboard insights error:', error);
+    return {
+      snapshot: {
+        todayRevenue: 0,
+        totalCustomers: 0,
+        totalProducts: 0,
+        criticalStockCount: 0,
+        overdueInvoicesCount: 0,
+      },
+      alerts: [],
+      opportunities: [],
+      generatedAt: new Date().toISOString(),
+    };
+  }
+}
+
 export async function getDashboardKPIs(): Promise<DashboardKPIs> {
   try {
     const response = await authFetch('/api/dashboard/kpis');

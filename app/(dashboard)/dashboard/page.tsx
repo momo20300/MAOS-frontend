@@ -12,6 +12,7 @@ import {
   DollarSign, FileText, Package, Users, TrendingUp,
   AlertCircle, RefreshCw, ShoppingCart, Trophy, BarChart3
 } from "lucide-react";
+import MaosInsights from "@/components/maos/MaosInsights";
 import { cn } from "@/lib/utils";
 import {
   LineChart,
@@ -134,13 +135,13 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success-400">
               {kpis?.revenue?.toLocaleString() || 0} MAD
             </div>
             <p className="text-xs text-muted-foreground mt-1">Total des ventes</p>
             <div className="flex items-center gap-1 mt-2">
-              <TrendingUp className="h-3 w-3 text-green-600" />
-              <span className="text-xs text-green-600 font-medium">+12.5%</span>
+              <TrendingUp className="h-3 w-3 text-success-400" />
+              <span className="text-xs text-success-400 font-medium">+12.5%</span>
             </div>
           </CardContent>
         </Card>
@@ -165,7 +166,7 @@ export default function DashboardPage() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-danger-400">
               {kpis?.criticalStock || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Articles sous seuil</p>
@@ -210,8 +211,8 @@ export default function DashboardPage() {
                 contentStyle={{ fontSize: 12 }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="ventes" name="Ventes" stroke="#22c55e" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="achats" name="Achats" stroke="#ef4444" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="ventes" name="Ventes" stroke="#6bbc8e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="achats" name="Achats" stroke="#c3758c" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="marge" name="Marge Net" stroke="#3b82f6" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -231,7 +232,7 @@ export default function DashboardPage() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">CA Aujourd&apos;hui</p>
-                <p className="text-lg font-bold text-green-600">
+                <p className="text-lg font-bold text-success-400">
                   {(kpis?.todayRevenue || 0).toLocaleString('fr-FR')} MAD
                 </p>
               </div>
@@ -258,7 +259,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-muted-foreground">{product.qty} vendus</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-green-600">
+                    <p className="text-sm font-semibold text-success-400">
                       {product.revenue.toLocaleString('fr-FR')} MAD
                     </p>
                   </div>
@@ -273,55 +274,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              MAOS Insights
-            </CardTitle>
-            <CardDescription>Briefing quotidien et alertes</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Stock critique alert */}
-            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium text-red-900 dark:text-red-100 text-sm">
-                  {kpis?.criticalStock || 0} produits en rupture de stock
-                </span>
-                <Badge variant="destructive" className="text-xs">Urgent</Badge>
-              </div>
-              <p className="text-xs text-red-600 dark:text-red-300">
-                Commander ces articles aupres des fournisseurs
-              </p>
-            </div>
-
-            {/* Analyse des ventes */}
-            <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium text-green-900 dark:text-green-100 text-sm">
-                  Analyse des ventes
-                </span>
-                <Badge variant="outline" className="text-xs text-green-600 border-green-300">FACILE</Badge>
-              </div>
-              <p className="text-sm text-green-700 dark:text-green-200">
-                CA total: {(kpis?.revenue || 0).toLocaleString()} MAD
-              </p>
-            </div>
-
-            {/* Base clients */}
-            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium text-blue-900 dark:text-blue-100 text-sm">
-                  Base clients active
-                </span>
-                <Badge variant="outline" className="text-xs text-blue-600 border-blue-300">MOYEN</Badge>
-              </div>
-              <p className="text-sm text-blue-700 dark:text-blue-200">
-                {kpis?.customers || 0} clients enregistres
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* MAOS Insights - Briefing proactif dynamique */}
+        <MaosInsights />
       </div>
 
       <Card>

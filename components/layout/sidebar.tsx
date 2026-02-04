@@ -47,6 +47,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
+// Types pour le RBAC
+type UserRole = 'SUPERADMIN' | 'OWNER' | 'ADMIN' | 'MANAGER' | 'USER';
+
+// Définition des accès par rôle
+// SUPERADMIN/OWNER/ADMIN: Tout
+// MANAGER: Opérationnel (CRM, Ventes, Achats, Stock, Projets, Support)
+// USER: Métier de base (CRM clients, Ventes commandes, Stock articles)
+const roleAccessMap: Record<UserRole, string[]> = {
+  SUPERADMIN: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'systeme'],
+  OWNER: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'systeme'],
+  ADMIN: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'systeme'],
+  MANAGER: ['crm', 'ventes', 'achats', 'stock', 'projets', 'support'],
+  USER: ['crm', 'ventes', 'stock'],
+};
+
 // Navigation structurée par sections
 const navigationSections = [
   {
@@ -54,15 +69,15 @@ const navigationSections = [
     title: "CRM",
     items: [
       { name: "Clients", href: "/clients", icon: Users },
-      { name: "Leads", href: "/leads", icon: UserPlus },
-      { name: "Opportunités", href: "/opportunities", icon: Target },
+      { name: "Leads", href: "/leads", icon: UserPlus, minRole: 'MANAGER' as UserRole },
+      { name: "Opportunités", href: "/opportunities", icon: Target, minRole: 'MANAGER' as UserRole },
     ],
   },
   {
     id: "ventes",
     title: "Ventes",
     items: [
-      { name: "Devis", href: "/quotations", icon: ClipboardList },
+      { name: "Devis", href: "/quotations", icon: ClipboardList, minRole: 'MANAGER' as UserRole },
       { name: "Commandes", href: "/orders", icon: ShoppingCart },
       { name: "Livraisons", href: "/deliveries", icon: Truck },
       { name: "Factures Ventes", href: "/invoices", icon: FileText },
@@ -83,8 +98,8 @@ const navigationSections = [
     title: "Stock",
     items: [
       { name: "Articles", href: "/products", icon: Package },
-      { name: "Entrepôts", href: "/warehouses", icon: Warehouse },
-      { name: "Mouvements", href: "/stock-entries", icon: BarChart3 },
+      { name: "Entrepôts", href: "/warehouses", icon: Warehouse, minRole: 'MANAGER' as UserRole },
+      { name: "Mouvements", href: "/stock-entries", icon: BarChart3, minRole: 'MANAGER' as UserRole },
     ],
   },
   {
@@ -156,6 +171,21 @@ const navigationSections = [
   },
 ];
 
+// Hiérarchie des rôles pour le filtrage des items
+const roleHierarchy: Record<UserRole, number> = {
+  SUPERADMIN: 5,
+  OWNER: 4,
+  ADMIN: 3,
+  MANAGER: 2,
+  USER: 1,
+};
+
+// Fonction pour vérifier si un rôle a accès à un niveau minimum
+function hasMinRole(userRole: UserRole, minRole?: UserRole): boolean {
+  if (!minRole) return true;
+  return roleHierarchy[userRole] >= roleHierarchy[minRole];
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout, isLoading } = useAuth();
@@ -164,17 +194,39 @@ export default function Sidebar() {
   const mountedRef = useRef(false);
   const [mounted, setMounted] = useState(false);
 
+  // Determine the user's effective role
+  const userRole: UserRole = useMemo(() => {
+    if (user?.isSuperAdmin) return 'SUPERADMIN';
+    const tenantRole = user?.currentTenant?.role?.toUpperCase();
+    if (tenantRole && tenantRole in roleHierarchy) {
+      return tenantRole as UserRole;
+    }
+    return 'USER'; // Default to USER if no role defined
+  }, [user]);
+
+  // Filter navigation sections based on user role
+  const filteredSections = useMemo(() => {
+    const accessibleSections = roleAccessMap[userRole] || [];
+    return navigationSections
+      .filter(section => accessibleSections.includes(section.id))
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item => hasMinRole(userRole, item.minRole)),
+      }))
+      .filter(section => section.items.length > 0);
+  }, [userRole]);
+
   // Calculate initial open sections based on current pathname
   const initialOpenSections = useMemo(() => {
     const sections: Record<string, boolean> = {};
-    const activeSection = navigationSections.find(section =>
+    const activeSection = filteredSections.find(section =>
       section.items.some(item => pathname === item.href)
     );
     if (activeSection) {
       sections[activeSection.id] = true;
     }
     return sections;
-  }, [pathname]);
+  }, [pathname, filteredSections]);
 
   // État pour les sections ouvertes
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(initialOpenSections);
@@ -190,14 +242,14 @@ export default function Sidebar() {
   // Update open sections when pathname changes (after initial mount)
   useEffect(() => {
     if (mountedRef.current) {
-      const activeSection = navigationSections.find(section =>
+      const activeSection = filteredSections.find(section =>
         section.items.some(item => pathname === item.href)
       );
       if (activeSection && !openSections[activeSection.id]) {
         setOpenSections(prev => ({ ...prev, [activeSection.id]: true }));
       }
     }
-  }, [pathname, openSections]);
+  }, [pathname, openSections, filteredSections]);
 
   // Toggle section ouverte/fermée
   const toggleSection = (sectionId: string) => {
@@ -294,8 +346,8 @@ export default function Sidebar() {
             Dashboard
           </Link>
 
-          {/* Sections rétractables */}
-          {navigationSections.map((section) => {
+          {/* Sections rétractables (filtrées par rôle) */}
+          {filteredSections.map((section) => {
             const isOpen = openSections[section.id] || false;
             const hasActiveItem = section.items.some(item => pathname === item.href);
 

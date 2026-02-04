@@ -110,16 +110,16 @@ export function MaosInsights() {
             {highPriorityAlerts.map((alert, index) => (
               <div
                 key={index}
-                className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900"
+                className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-danger-100 dark:border-red-900"
               >
-                <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="h-5 w-5 text-danger-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-red-900 dark:text-red-100">{alert.title}</span>
                     <Badge variant="destructive" className="text-xs">Urgent</Badge>
                   </div>
-                  <p className="text-sm text-red-700 dark:text-red-200 mt-1">{alert.detail}</p>
-                  <p className="text-xs text-red-600 dark:text-red-300 mt-2 flex items-center gap-1">
+                  <p className="text-sm text-danger-500 dark:text-danger-100 mt-1">{alert.detail}</p>
+                  <p className="text-xs text-danger-400 dark:text-danger-200 mt-2 flex items-center gap-1">
                     <ChevronRight className="h-3 w-3" />
                     {alert.suggestedAction}
                   </p>
@@ -153,17 +153,17 @@ export function MaosInsights() {
             {insights.opportunities.slice(0, 2).map((opp, index) => (
               <div
                 key={index}
-                className="flex items-start gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900"
+                className="flex items-start gap-3 p-3 rounded-lg bg-success-50 dark:bg-green-950/20 border border-success-100 dark:border-green-900"
               >
-                <TrendingUp className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <TrendingUp className="h-5 w-5 text-success-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-green-900 dark:text-green-100">{opp.title}</span>
-                    <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                    <Badge variant="outline" className="text-xs text-success-400 border-success-200">
                       {opp.effort}
                     </Badge>
                   </div>
-                  <p className="text-sm text-green-700 dark:text-green-200 mt-1">{opp.impact}</p>
+                  <p className="text-sm text-success-500 dark:text-success-100 mt-1">{opp.impact}</p>
                 </div>
               </div>
             ))}

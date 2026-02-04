@@ -1,141 +1,186 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
-});
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-// 🎭 PERSONNALITÉ MAOS SELON PACK
-const getSystemPrompt = (pack: string, metier: string) => {
-  const basePersonality = `Tu es MAOS IA, le dirigeant numérique intelligent.
-
-🎯 TON IDENTITÉ:
-- Tu es le cockpit exécutif qui aide les TPE/PME à piloter leur entreprise
-- Tu parles en français, de manière professionnelle mais accessible
-- Tu es honnête : si tu ne sais pas, tu le dis
-- Tu guides vers MAOS ERP pour les actions concrètes
-
-📋 PRINCIPE D'OR: "0 mensonge client"
-- Tu te bases uniquement sur les données réelles de MAOS ERP
-- Tu ne refais PAS l'ERP, tu l'interprètes et guides
-- MAOS explique → MAOS ERP exécute
-
-🗣️ TON STYLE:
-- Concis (2-3 phrases max)
-- Langage métier (pas technique)
-- Actionnable
-- Empathique
-
-Métier actuel: ${metier}
-`;
-
-  const packCapabilities: Record<string, string> = {
-    STANDARD: `
-🟦 MAOS AI ESSENTIAL (60-65%)
-
-TU PEUX:
-✅ Lire les données MAOS ERP
-✅ Expliquer les écrans et KPIs
-✅ Donner de l'aide contextuelle
-✅ Alertes factuelles (retards, incohérences)
-✅ Reformuler des documents
-
-TU NE PEUX PAS:
-❌ Faire de prédictions
-❌ Recommandations stratégiques
-❌ Simulations complexes
-
-EXEMPLE BON:
-User: "C'est quoi ce chiffre?"
-MAOS: "C'est ton CA du mois. Il vient de tes factures payées dans MAOS ERP."
-
-EXEMPLE MAUVAIS:
-User: "Que dois-je faire?"
-MAOS: ❌ "Tu devrais baisser tes prix" (PAS DE STRATÉGIE EN STANDARD)
-    `,
-    PRO: `
-🟨 MAOS AI OPERATIONAL (80%)
-
-TU PEUX (ESSENTIAL +):
-✅ Analyser marges/stocks/retards
-✅ Recommandations opérationnelles
-✅ Corrélations simples
-✅ Lecture fichiers Excel/PDF
-
-EXEMPLE:
-User: "Mon stock baisse vite"
-MAOS: "J'ai analysé : Article X vendu 3x plus ce mois. Je suggère de réapprovisionner 50 unités."
-    `,
-    PRO_PLUS: `
-🟥 MAOS AI STRATEGIC (100%)
-
-TU PEUX (OPERATIONAL +):
-✅ Prévisions (TOUJOURS marquées "hypothèse")
-✅ Recommandations stratégiques
-✅ Scénarios comparatifs
-✅ Optimisation (transport)
-
-EXEMPLE:
-User: "Prévois mes ventes"
-MAOS: "HYPOTHÈSE basée sur historique : +15% probable le mois prochain. Mais c'est une projection, pas une certitude."
-    `
-  };
-
-  return basePersonality + (packCapabilities[pack] || packCapabilities.STANDARD);
-};
-
+/**
+ * MAOS AI Chat Proxy
+ * Routes all chat requests to the NestJS backend for proper agent orchestration.
+ *
+ * The backend handles:
+ * - 50-agent hierarchical system
+ * - ERPNext data integration
+ * - LLM-based language detection
+ * - Role-aware system prompts
+ * - PDF report generation
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { messages, context } = await request.json();
-    const pack = context?.pack || 'STANDARD';
-    const metier = context?.metier || 'gestion_commerciale';
+    const body = await request.json();
+    const { messages, context, images, files, forcedLang } = body;
 
-    // 🧠 Prompt système contextuel
-    const systemPrompt = getSystemPrompt(pack, metier);
+    // Get the last user message
+    const lastUserMessage = messages
+      .filter((m: { role: string }) => m.role === 'user')
+      .pop();
 
-    console.log('💚 MAOS pense...', { pack, metier });
+    if (!lastUserMessage) {
+      return NextResponse.json({
+        message: 'Bonjour! Je suis MAOS, votre assistant intelligent. Comment puis-je vous aider?'
+      });
+    }
 
-    // 🤖 Appel OpenAI
+    // Get auth token from cookies
+    const cookieStore = await cookies();
+    const token = cookieStore.get('maos_token')?.value;
+
+    if (!token) {
+      console.warn('No auth token found, using direct OpenAI fallback');
+      return await fallbackToOpenAI(messages, context);
+    }
+
+    // Build conversation history for context
+    const conversationHistory = messages
+      .slice(-10) // Last 10 messages for context
+      .map((m: { role: string; content: string }) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+    // Call the backend orchestrator
+    const response = await fetch(`${BACKEND_URL}/api/orchestrator/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        message: lastUserMessage.content,
+        context: {
+          ...context,
+          conversationHistory,
+        },
+        images: images || [],
+        files: files || [],
+        forcedLang,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Backend error:', response.status, response.statusText);
+
+      // If backend is unavailable, fallback to direct OpenAI
+      if (response.status >= 500) {
+        console.warn('Backend unavailable, falling back to OpenAI');
+        return await fallbackToOpenAI(messages, context);
+      }
+
+      throw new Error(`Backend error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Unknown backend error');
+    }
+
+    // Return the response with all metadata
+    return NextResponse.json({
+      message: data.data.response,
+      pdf: data.data.pdf,
+      lang: data.data.lang || 'fr',
+      langName: data.data.langName || 'Francais',
+      direction: data.data.direction || 'ltr',
+      hasTTS: data.data.hasTTS !== false,
+      agent: data.data.agent,
+      pack: data.data.pack,
+      metier: data.data.metier,
+    });
+
+  } catch (error: unknown) {
+    console.error('Chat API error:', error);
+
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    return NextResponse.json(
+      {
+        message: 'Je rencontre un probleme technique. Veuillez reessayer.',
+        error: errorMessage
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Fallback to direct OpenAI when backend is unavailable
+ * This is a degraded mode - no real company data, no agents
+ */
+async function fallbackToOpenAI(
+  messages: Array<{ role: string; content: string }>,
+  context?: { pack?: string; metier?: string }
+): Promise<NextResponse> {
+  const OpenAI = (await import('openai')).default;
+
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || '',
+  });
+
+  const pack = context?.pack || 'STANDARD';
+  const metier = context?.metier || 'gestion_commerciale';
+
+  const systemPrompt = `Tu es MAOS, l'assistant intelligent d'entreprise.
+
+MODE DEGRADE: Le backend est temporairement indisponible.
+Tu n'as pas acces aux donnees reelles de l'entreprise.
+
+Ce que tu peux faire:
+- Repondre aux questions generales
+- Expliquer les fonctionnalites de MAOS
+- Aider avec des questions simples
+
+Ce que tu ne peux PAS faire:
+- Donner des chiffres de l'entreprise (CA, stock, clients)
+- Analyser des donnees
+- Generer des rapports
+
+Si l'utilisateur demande des donnees, dis-lui honnement:
+"Je n'ai pas acces aux donnees de votre entreprise en ce moment. Le service sera retabli sous peu."
+
+Pack: ${pack}
+Metier: ${metier}`;
+
+  try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
-        ...messages.map((msg: any) => ({
-          role: msg.role,
+        ...messages.slice(-5).map((msg) => ({
+          role: msg.role as 'user' | 'assistant' | 'system',
           content: msg.content,
         })),
       ],
       temperature: 0.7,
-      max_tokens: 300, // Réponses courtes
+      max_tokens: 500,
     });
 
-    const aiMessage = completion.choices[0]?.message?.content || 
-      'Désolé, je n\'ai pas pu générer de réponse.';
+    const aiMessage = completion.choices[0]?.message?.content ||
+      'Desole, je ne peux pas repondre en ce moment.';
 
-    console.log('💚 MAOS répond:', aiMessage.substring(0, 50) + '...');
-
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: aiMessage,
       pack,
-      metier
+      metier,
+      lang: 'fr',
+      langName: 'Francais',
+      direction: 'ltr',
+      hasTTS: true,
     });
-
-  } catch (error: any) {
-    console.error('💔 Erreur MAOS:', error);
-    
-    let errorMessage = 'Je rencontre un problème technique';
-    
-    if (error.status === 401) {
-      errorMessage = 'Ma connexion IA n\'est pas configurée correctement';
-    } else if (error.status === 429) {
-      errorMessage = 'Je suis surchargé, réessaie dans quelques instants';
-    } else if (error.code === 'insufficient_quota') {
-      errorMessage = 'Mon quota IA est dépassé';
-    }
-    
+  } catch (openaiError) {
+    console.error('OpenAI fallback error:', openaiError);
     return NextResponse.json(
-      { error: errorMessage },
-      { status: error.status || 500 }
+      { message: 'Service temporairement indisponible. Veuillez reessayer plus tard.' },
+      { status: 503 }
     );
   }
 }
