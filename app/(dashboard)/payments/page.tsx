@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Plus, TrendingUp, TrendingDown, Download, Printer, FileSpreadsheet, Filter } from "lucide-react";
+import { authFetch } from "@/lib/services/auth";
 
 interface Payment {
   name: string;
@@ -29,13 +30,13 @@ export default function PaymentsPage() {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const response = await fetch('/api/finance/payments');
+        const response = await authFetch('/api/erp/accounting/payments');
         if (response.ok) {
           const data = await response.json();
           setPayments(data.data || []);
         }
       } catch (error) {
-        console.error('Erreur chargement paiements:', error);
+        // silently handle error
       }
       setLoading(false);
     };

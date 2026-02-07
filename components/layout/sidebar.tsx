@@ -55,8 +55,8 @@ type UserRole = 'SUPERADMIN' | 'OWNER' | 'ADMIN' | 'MANAGER' | 'USER';
 // MANAGER: Opérationnel (CRM, Ventes, Achats, Stock, Projets, Support)
 // USER: Métier de base (CRM clients, Ventes commandes, Stock articles)
 const roleAccessMap: Record<UserRole, string[]> = {
-  SUPERADMIN: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'systeme'],
-  OWNER: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'systeme'],
+  SUPERADMIN: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'billing', 'superadmin', 'systeme'],
+  OWNER: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'billing', 'systeme'],
   ADMIN: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'systeme'],
   MANAGER: ['crm', 'ventes', 'achats', 'stock', 'projets', 'support'],
   USER: ['crm', 'ventes', 'stock'],
@@ -161,6 +161,22 @@ const navigationSections = [
     ],
   },
   {
+    id: "billing",
+    title: "Abonnement",
+    items: [
+      { name: "Facturation", href: "/billing", icon: CreditCard },
+    ],
+  },
+  {
+    id: "superadmin",
+    title: "SuperAdmin",
+    items: [
+      { name: "Clients MAOS", href: "/superadmin/customers", icon: Building2 },
+      { name: "Facturation", href: "/superadmin/billing", icon: Receipt },
+      { name: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
+    ],
+  },
+  {
     id: "systeme",
     title: "Système",
     items: [
@@ -239,17 +255,18 @@ export default function Sidebar() {
     }
   }, []);
 
-  // Update open sections when pathname changes (after initial mount)
+  // Auto-open section only when navigating to a new page
   useEffect(() => {
     if (mountedRef.current) {
       const activeSection = filteredSections.find(section =>
         section.items.some(item => pathname === item.href)
       );
-      if (activeSection && !openSections[activeSection.id]) {
+      if (activeSection) {
         setOpenSections(prev => ({ ...prev, [activeSection.id]: true }));
       }
     }
-  }, [pathname, openSections, filteredSections]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   // Toggle section ouverte/fermée
   const toggleSection = (sectionId: string) => {

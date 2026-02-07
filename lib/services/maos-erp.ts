@@ -10,7 +10,7 @@
 
 import { authFetch } from './auth';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export async function getDashboardKPIs() {
   try {
@@ -23,8 +23,7 @@ export async function getDashboardKPIs() {
       criticalStock: 0,
       customers: 0,
     };
-  } catch (error) {
-    console.error('MAOS Backend erreur:', error);
+  } catch {
     return { revenue: 0, unpaidInvoices: 0, criticalStock: 0, customers: 0 };
   }
 }

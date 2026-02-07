@@ -101,60 +101,38 @@ export default function MaosTalk() {
     setMessages([welcomeMessage]);
   }, []);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
   // ===== TEXT-TO-SPEECH (TTS) =====
   // Use browser's Web Speech API for Arabic (FREE), API for other languages
   const speakWithBrowserTTS = (text: string, lang: string = 'ar-MA') => {
     if (!ttsEnabled) return;
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      console.warn('Browser TTS not supported');
-      return;
-    }
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
-    console.log('🔊 Browser TTS: Starting speech synthesis');
-    console.log('🔊 Original text:', text.substring(0, 100));
-
-    // IMPORTANT: Replace "MAD" with "Dirhams" for better pronunciation
     const processedText = text.replace(/\bMAD\b/g, 'Dirhams');
-    console.log('🔊 Processed text:', processedText.substring(0, 100));
-
     const utterance = new SpeechSynthesisUtterance(processedText);
     utterance.lang = lang;
-    utterance.rate = 0.85; // Slower for clearer pronunciation
+    utterance.rate = 0.85;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    // Try to find an Arabic voice
     const voices = window.speechSynthesis.getVoices();
     const arabicVoice = voices.find(v =>
       v.lang.startsWith('ar') || v.lang.includes('Arab')
     );
     if (arabicVoice) {
       utterance.voice = arabicVoice;
-      console.log('🔊 Using Arabic voice:', arabicVoice.name);
     }
 
-    utterance.onstart = () => {
-      console.log('🔊 Browser TTS: Speech started');
-      setIsSpeaking(true);
-    };
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
 
-    utterance.onend = () => {
-      console.log('🔊 Browser TTS: Speech ended');
-      setIsSpeaking(false);
-    };
-
-    utterance.onerror = (event) => {
-      console.error('🔊 Browser TTS error:', event.error);
-      setIsSpeaking(false);
-    };
-
-    // Give MORE time for initialization to prevent audio cutoff
     setTimeout(() => {
-      window.speechSynthesis.cancel(); // Clear queue
+      window.speechSynthesis.cancel();
     }, 150);
 
     setTimeout(() => {
-      console.log('🔊 Browser TTS: Calling speak()');
       window.speechSynthesis.speak(utterance);
     }, 250);
   };
@@ -162,24 +140,14 @@ export default function MaosTalk() {
   const speakText = async (text: string, langCode?: string) => {
     if (!ttsEnabled) return;
 
-    // IMPORTANT: Replace "MAD" with "Dirhams" for better pronunciation
     const processedText = text.replace(/\bMAD\b/g, 'Dirhams');
-    console.log('🔊 API TTS: Replaced MAD with Dirhams');
 
     try {
       setIsSpeaking(true);
 
-      // IMPORTANT: Replace "MAD" with "Dirhams" for better pronunciation
-      const processedText = text.replace(/\bMAD\b/g, 'Dirhams');
-      console.log('🔊 API TTS: Replaced MAD with Dirhams');
-
-      // Call backend OpenAI TTS endpoint
-      // IMPORTANT: Use charset=utf-8 to preserve Arabic/multilingual text
       const ttsText = processedText.substring(0, 4000);
-      console.log('🔊 TTS sending text:', ttsText.substring(0, 100), '...');
-      console.log('🔊 TTS text encoding check:', encodeURIComponent(ttsText.substring(0, 50)));
 
-      const response = await fetch('http://localhost:4000/api/speech/tts', {
+      const response = await fetch(`${API_URL}/api/speech/tts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
@@ -187,27 +155,17 @@ export default function MaosTalk() {
         },
         body: JSON.stringify({
           text: ttsText,
-          lang: langCode, // Pass detected language for accurate TTS
+          lang: langCode,
         }),
       });
 
       if (!response.ok) {
-        console.error('TTS API error:', response.status);
-        // Fallback to browser TTS
         speakWithBrowserTTS(text, 'fr');
         return;
       }
 
-      // Get language info from headers
-      const detectedLang = response.headers.get('X-Language-Code') || 'fr';
-      const langName = response.headers.get('X-Language-Name') || 'Français';
-      const ttsEngine = response.headers.get('X-TTS-Engine') || 'openai';
-      console.log(`🔊 TTS: ${langName} (${detectedLang}) via ${ttsEngine}`);
-
-      // Get audio blob and play
       const audioBlob = await response.blob();
       if (audioBlob.size === 0) {
-        console.error('TTS returned empty audio');
         setIsSpeaking(false);
         return;
       }
@@ -222,35 +180,23 @@ export default function MaosTalk() {
       audioRef.current = audio;
 
       audio.onended = () => {
-        console.log('🔊 Audio ended successfully');
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
       };
-      audio.onerror = (e) => {
-        console.error('🔊 Audio element error:', e);
+      audio.onerror = () => {
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
       };
 
-      console.log('🔊 Attempting to play audio...');
       try {
         await audio.play();
-        console.log('✅ Audio playback started successfully');
       } catch (playError: any) {
-        console.error('❌ Audio play() failed:', playError);
-        console.error('❌ Error name:', playError.name);
-        console.error('❌ Error message:', playError.message);
-
-        // Check if it's an autoplay policy error
         if (playError.name === 'NotAllowedError') {
-          console.error('🚫 Autoplay blocked by browser! User interaction required.');
-          alert('Votre navigateur bloque l\'audio automatique. Cliquez sur l\'icône de volume pour activer l\'audio.');
+          // Browser blocks autoplay — user needs to interact first
         }
-        throw playError; // Re-throw to trigger fallback
+        throw playError;
       }
-    } catch (error) {
-      console.error("TTS error:", error);
-      // Fallback to browser TTS
+    } catch {
       speakWithBrowserTTS(text, 'fr');
     }
   };
@@ -309,10 +255,7 @@ export default function MaosTalk() {
     const files = e.target.files;
     if (!files) return;
 
-    console.log('📎 handleFileSelect called with', files.length, 'file(s)');
-
     for (const file of Array.from(files)) {
-      console.log(`📎 Processing file: ${file.name} (${file.type}, ${file.size} bytes)`);
       const newFile: UploadedFile = { file, analyzing: true };
 
       if (file.type.startsWith('image/')) {
@@ -324,13 +267,10 @@ export default function MaosTalk() {
       try {
         let content = '';
         const ext = file.name.split('.').pop()?.toLowerCase();
-        console.log(`📎 File extension: ${ext}`);
 
         if (ext === 'xlsx' || ext === 'xls') {
-          console.log('📎 Parsing Excel file...');
           content = await parseExcelFile(file);
         } else if (ext === 'csv' || ext === 'txt') {
-          console.log('📎 Parsing text/CSV file...');
           content = await parseTextFile(file);
         } else if (ext === 'pdf') {
           content = `[Fichier PDF: ${file.name}] - Extraction du contenu en cours...`;
@@ -340,16 +280,12 @@ export default function MaosTalk() {
           content = `[Fichier: ${file.name}] - Type: ${file.type || 'inconnu'}`;
         }
 
-        console.log(`📎 Parsed content length: ${content.length} chars`);
-        console.log(`📎 Content preview: ${content.substring(0, 200)}...`);
-
         setUploadedFiles(prev =>
           prev.map(f =>
             f.file === file ? { ...f, content, analyzing: false } : f
           )
         );
-      } catch (error) {
-        console.error("📎 Erreur parsing:", error);
+      } catch {
         setUploadedFiles(prev =>
           prev.map(f =>
             f.file === file ? { ...f, content: `Erreur de lecture: ${file.name}`, analyzing: false } : f
@@ -382,15 +318,9 @@ export default function MaosTalk() {
 
   // ===== PDF DOWNLOAD =====
   const downloadPDF = (pdfData: string, filename: string) => {
-    console.log('📄 downloadPDF called:', { filename, dataLength: pdfData?.length });
     try {
-      if (!pdfData || pdfData.length === 0) {
-        console.error('PDF data is empty');
-        alert('Erreur: Le PDF est vide');
-        return;
-      }
+      if (!pdfData || pdfData.length === 0) return;
 
-      // Convert base64 to blob
       const byteCharacters = atob(pdfData);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -398,9 +328,7 @@ export default function MaosTalk() {
       }
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'application/pdf' });
-      console.log('📄 PDF blob created:', { size: blob.size });
 
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -409,10 +337,8 @@ export default function MaosTalk() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      console.log('📄 PDF download initiated successfully');
-    } catch (error) {
-      console.error('PDF download error:', error);
-      alert('Erreur lors du téléchargement du PDF: ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
+    } catch {
+      // PDF download failed
     }
   };
 
@@ -470,9 +396,8 @@ export default function MaosTalk() {
       setIsRecording(true);
       resetActivityTimer();
 
-    } catch (error) {
-      console.error("Erreur micro:", error);
-      alert("Impossible d'accéder au microphone. Vérifiez les permissions du navigateur.");
+    } catch {
+      // Microphone access denied
     }
   }, [isSpeaking, stopSpeaking, resetActivityTimer]);
 
@@ -509,11 +434,9 @@ export default function MaosTalk() {
         setTimeout(() => {
           handleSendWithText(transcribedText);
         }, 100);
-      } else {
-        console.warn("Transcription vide");
       }
-    } catch (error) {
-      console.error("Erreur transcription:", error);
+    } catch {
+      // Transcription failed
     } finally {
       setIsTranscribing(false);
     }
@@ -533,12 +456,8 @@ export default function MaosTalk() {
   const handleSendWithText = async (textToSend: string) => {
     if ((!textToSend.trim() && uploadedFiles.length === 0) || isLoading) return;
 
-    console.log('🎤 handleSendWithText called with voice input');
-    console.log('🎤 uploadedFiles:', uploadedFiles.length, 'files');
-
-    // Use streaming for simple text queries (no files) - faster response!
+    // Use streaming for simple text queries (no files) - faster response
     if (useStreaming && uploadedFiles.length === 0 && textToSend.trim()) {
-      console.log('⚡ Using STREAMING mode for faster response');
       return handleSendStreaming(textToSend);
     }
 
@@ -553,11 +472,10 @@ export default function MaosTalk() {
           try {
             const base64 = await fileToBase64(f.file);
             imagesToSend.push(base64);
-          } catch (err) {
-            console.error('Error converting image:', err);
+          } catch {
+            // Image conversion failed
           }
         } else if (f.content && f.content.length > 0) {
-          console.log(`🎤 Including file: ${f.file.name} (${f.content.length} chars)`);
           filesToSend.push({
             name: f.file.name,
             type: f.file.type || 'text/plain',
@@ -594,11 +512,6 @@ export default function MaosTalk() {
     setIsLoading(true);
 
     try {
-      console.log('🎤 Sending to backend:', {
-        filesCount: filesToSend.length,
-        imagesCount: imagesToSend.length,
-      });
-
       const aiResponse = await sendMessageToAI(newMessages, {
         images: imagesToSend.length > 0 ? imagesToSend : undefined,
         files: filesToSend.length > 0 ? filesToSend : undefined,
@@ -613,21 +526,12 @@ export default function MaosTalk() {
         direction: aiResponse.direction,
       };
 
-      if (aiResponse.pdf) {
-        console.log('📄 Adding PDF to message:', {
-          filename: aiResponse.pdf.filename,
-          dataLength: aiResponse.pdf.data?.length,
-        });
-      }
-
       setMessages([...newMessages, assistantMessage]);
 
-      // Auto-play TTS avec voix OpenAI naturelle
       if (ttsEnabled && aiResponse.message && aiResponse.hasTTS) {
         speakText(aiResponse.message, aiResponse.lang);
       }
-    } catch (error) {
-      console.error("💔 Erreur:", error);
+    } catch {
       setMessages([...newMessages, {
         role: "assistant" as const,
         content: "Une erreur technique est survenue. Veuillez réessayer."
@@ -706,7 +610,6 @@ export default function MaosTalk() {
       },
 
       onComplete: (fullText: string, processingTime: number, audioCount?: number) => {
-        console.log(`✅ Stream done: ${processingTime}ms, ${audioQueueRef.current.length}/${audioCount || '?'} audio`);
         streamingCompleteRef.current = true;
         setIsLoading(false);
         setStreamingText("");
@@ -733,8 +636,7 @@ export default function MaosTalk() {
         }, 300);
       },
 
-      onError: (error: string) => {
-        console.error("❌ Streaming error:", error);
+      onError: () => {
         setIsLoading(false);
         setMessages(msgs => {
           const updated = [...msgs];
@@ -753,8 +655,7 @@ export default function MaosTalk() {
 
     try {
       await sendMessageStreamingSSE(textToSend.trim(), callbacks, { wantAudio: ttsEnabled });
-    } catch (error) {
-      console.error("Streaming failed:", error);
+    } catch {
       setIsLoading(false);
     }
   };
@@ -811,24 +712,14 @@ export default function MaosTalk() {
   };
 
   const handleSend = async () => {
-    console.log('📤 handleSend called');
-    console.log('📤 uploadedFiles:', uploadedFiles.length, 'files');
-    uploadedFiles.forEach((f, i) => {
-      console.log(`📤 File ${i}: ${f.file.name}, analyzing=${f.analyzing}, contentLength=${f.content?.length || 0}`);
-    });
-
     // Check if any file is still being analyzed
     const filesStillAnalyzing = uploadedFiles.some(f => f.analyzing);
-    if (filesStillAnalyzing) {
-      alert('Veuillez attendre que tous les fichiers soient analysés avant d\'envoyer.');
-      return;
-    }
+    if (filesStillAnalyzing) return;
 
     if ((!message.trim() && uploadedFiles.length === 0) || isLoading) return;
 
-    // Use streaming for simple text queries (no files) - faster response!
+    // Use streaming for simple text queries (no files) - faster response
     if (useStreaming && uploadedFiles.length === 0 && message.trim()) {
-      console.log('⚡ Using STREAMING mode for faster response');
       return handleSendStreaming(message.trim());
     }
 
@@ -847,12 +738,10 @@ export default function MaosTalk() {
             const base64 = await fileToBase64(f.file);
             imagesToSend.push(base64);
             fileNames.push(`📷 ${f.file.name}`);
-          } catch (err) {
-            console.error('Error converting image:', err);
+          } catch {
+            // Image conversion failed
           }
         } else if (f.content && f.content.length > 0) {
-          // For other files (CSV, Excel, TXT), send as separate file object
-          console.log(`📎 Preparing file for backend: ${f.file.name} (${f.content.length} chars)`);
           filesToSend.push({
             name: f.file.name,
             type: f.file.type || 'text/plain',
@@ -860,7 +749,6 @@ export default function MaosTalk() {
           });
           fileNames.push(`📎 ${f.file.name}`);
         } else {
-          console.warn(`⚠️ File without content: ${f.file.name}`);
           fileNames.push(`📎 ${f.file.name} (non lu)`);
         }
       }
@@ -894,14 +782,6 @@ export default function MaosTalk() {
     setIsLoading(true);
 
     try {
-      // Send with images AND files
-      console.log('📤 Sending to backend:', {
-        messageCount: newMessages.length,
-        imagesCount: imagesToSend.length,
-        filesCount: filesToSend.length,
-        fileNames: filesToSend.map(f => f.name)
-      });
-
       const aiResponse = await sendMessageToAI(newMessages, {
         images: imagesToSend.length > 0 ? imagesToSend : undefined,
         files: filesToSend.length > 0 ? filesToSend : undefined,
@@ -916,21 +796,12 @@ export default function MaosTalk() {
       };
 
       // Debug: Log PDF attachment
-      if (aiResponse.pdf) {
-        console.log('📄 Adding PDF to message:', {
-          filename: aiResponse.pdf.filename,
-          dataLength: aiResponse.pdf.data?.length,
-        });
-      }
-
       setMessages([...newMessages, assistantMessage]);
 
-      // Auto-play TTS avec voix OpenAI naturelle
       if (ttsEnabled && aiResponse.message && aiResponse.hasTTS) {
         speakText(aiResponse.message, aiResponse.lang);
       }
-    } catch (error) {
-      console.error("💔 Erreur:", error);
+    } catch {
       setMessages([...newMessages, {
         role: "assistant" as const,
         content: "Une erreur technique est survenue. Veuillez réessayer."
@@ -1025,10 +896,7 @@ export default function MaosTalk() {
                       {/* PDF Download Button */}
                       {msg.pdf && msg.pdf.data && (
                         <Button
-                          onClick={() => {
-                            console.log('📄 Download button clicked for:', msg.pdf!.filename);
-                            downloadPDF(msg.pdf!.data, msg.pdf!.filename);
-                          }}
+                          onClick={() => downloadPDF(msg.pdf!.data, msg.pdf!.filename)}
                           className="mt-3 bg-success-400 hover:bg-success-500 text-white"
                           size="sm"
                         >

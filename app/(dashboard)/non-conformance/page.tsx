@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Plus, CheckCircle, XCircle } from "lucide-react";
+import { authFetch } from "@/lib/services/auth";
 
 interface NonConformance {
   name: string;
@@ -27,13 +28,13 @@ export default function NonConformancePage() {
   useEffect(() => {
     const fetchNonConformances = async () => {
       try {
-        const response = await fetch('/api/quality/non-conformances');
+        const response = await authFetch('/api/erp/quality/non-conformances');
         if (response.ok) {
           const data = await response.json();
           setNonConformances(data.data || []);
         }
       } catch (error) {
-        console.error('Erreur chargement non-conformités:', error);
+        // silently handle error
       }
       setLoading(false);
     };

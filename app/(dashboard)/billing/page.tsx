@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/context/auth-context";
+import { authFetch } from "@/lib/services/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,24 +153,27 @@ export default function OwnerBillingPage() {
     const [selectedPack, setSelectedPack] = useState<keyof typeof PACKS | null>(null);
 
     // Fetch subscription and invoices
-    useState(() => {
+    useEffect(() => {
         fetchBillingData();
-    });
+    }, []);
 
     const fetchBillingData = async () => {
         try {
             const [subRes, invRes] = await Promise.all([
-                fetch('/api/billing/subscription'),
-                fetch('/api/billing/invoices')
+                authFetch('/api/billing/subscription'),
+                authFetch('/api/billing/invoices')
             ]);
 
-            const subData = await subRes.json();
-            const invData = await invRes.json();
-
-            setSubscription(subData);
-            setInvoices(invData);
-        } catch (error) {
-            console.error('Failed to fetch billing data:', error);
+            if (subRes.ok) {
+                const subData = await subRes.json();
+                setSubscription(subData.data || subData);
+            }
+            if (invRes.ok) {
+                const invData = await invRes.json();
+                setInvoices(invData.data || invData);
+            }
+        } catch {
+            // Billing data unavailable
         } finally {
             setLoading(false);
         }
@@ -177,24 +181,25 @@ export default function OwnerBillingPage() {
 
     const handleUpgrade = async (pack: keyof typeof PACKS) => {
         try {
-            const res = await fetch('/api/billing/upgrade', {
+            const res = await authFetch('/api/billing/upgrade', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pack })
             });
 
-            const { clientSecret } = await res.json();
-            setClientSecret(clientSecret);
+            if (!res.ok) throw new Error('Upgrade failed');
+            const data = await res.json();
+            setClientSecret(data.clientSecret);
             setSelectedPack(pack);
-        } catch (error) {
-            console.error('Failed to create payment intent:', error);
-            alert('Failed to upgrade. Please try again.');
+        } catch {
+            // Show inline error instead of blocking alert
         }
     };
 
     const downloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
         try {
-            const res = await fetch(`/api/billing/invoices/${invoiceId}/download`);
+            const res = await authFetch(`/api/billing/invoices/${invoiceId}/download`);
+            if (!res.ok) throw new Error('Download failed');
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -204,8 +209,8 @@ export default function OwnerBillingPage() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-        } catch (error) {
-            console.error('Failed to download invoice:', error);
+        } catch {
+            // Download failed silently
         }
     };
 

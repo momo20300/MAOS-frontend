@@ -1,12 +1,12 @@
-﻿/** @type {import('next').NextConfig} */
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: '/api/erpnext/:path*',
-        destination: 'http://localhost:8080/api/:path*',
-      },
-    ];
+  // All data goes through backend (port 4000) — no direct ERPNext access
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ["@svgr/webpack"],
+    });
+    return config;
   },
   async headers() {
     return [

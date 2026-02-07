@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileBarChart, Plus, DollarSign } from "lucide-react";
+import { authFetch } from "@/lib/services/auth";
 
 interface JournalEntry {
   name: string;
@@ -27,13 +28,13 @@ export default function JournalEntriesPage() {
   useEffect(() => {
     const fetchEntries = async () => {
       try {
-        const response = await fetch('/api/finance/journal-entries');
+        const response = await authFetch('/api/erp/accounting/journal-entries');
         if (response.ok) {
           const data = await response.json();
           setEntries(data.data || []);
         }
       } catch (error) {
-        console.error('Erreur chargement écritures:', error);
+        // silently handle error
       }
       setLoading(false);
     };

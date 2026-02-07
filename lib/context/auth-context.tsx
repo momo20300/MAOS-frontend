@@ -40,6 +40,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         // Check if we have stored auth data
         if (isAuthenticated()) {
+          // Sync cookie from localStorage to ensure middleware passes
+          // This fixes the redirect loop if cookie is lost but localStorage remains
+          const token = localStorage.getItem('maos_access_token');
+          if (token) {
+            document.cookie = `maos_access_token=${token}; path=/; max-age=604800; SameSite=Lax`;
+          }
+
           // Try to get user from storage first
           const storedUser = getStoredUser();
           if (storedUser) {

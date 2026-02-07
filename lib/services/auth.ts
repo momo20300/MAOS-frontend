@@ -262,7 +262,7 @@ export async function refreshAccessToken(): Promise<AuthTokens | null> {
 /**
  * Get current user profile
  */
-export async function getCurrentUser(): Promise<AuthUser | null> {
+export async function getCurrentUser(retries = 1): Promise<AuthUser | null> {
   const token = getAccessToken();
 
   if (!token) {
@@ -277,11 +277,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 && retries > 0) {
         // Try to refresh token
         const newTokens = await refreshAccessToken();
         if (newTokens) {
-          return getCurrentUser();
+          return getCurrentUser(retries - 1);
         }
         clearAuthData();
       }

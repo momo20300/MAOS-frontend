@@ -35,8 +35,8 @@ export default function MaosInsights({ className, showRefresh = true }: MaosInsi
     try {
       const data = await getDashboardInsights();
       setInsights(data);
-    } catch (error) {
-      console.error("Insights fetch error:", error);
+    } catch {
+      // Insights unavailable
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

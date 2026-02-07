@@ -1,5 +1,7 @@
 import { authFetch } from './auth';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 export interface AttachedFile {
   name: string;
   type: string;
@@ -52,11 +54,6 @@ export async function sendMessageToAI(
       forcedLang: options?.forcedLang, // Force response language
     };
 
-    // Debug log
-    if (options?.files && options.files.length > 0) {
-      console.log('📎 Sending files to backend:', options.files.map(f => ({ name: f.name, contentLength: f.content.length })));
-    }
-
     const response = await authFetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -69,14 +66,6 @@ export async function sendMessageToAI(
 
     const data = await response.json();
 
-    // Log PDF data for debugging
-    if (data.pdf) {
-      console.log('📄 PDF received from backend:', {
-        filename: data.pdf.filename,
-        dataLength: data.pdf.data?.length,
-      });
-    }
-
     return {
       message: data.message || 'Je n\'ai pas pu traiter votre demande.',
       pdf: data.pdf, // Include PDF if present
@@ -87,7 +76,6 @@ export async function sendMessageToAI(
       hasTTS: data.hasTTS !== false,
     };
   } catch (error) {
-    console.error('Backend erreur:', error);
     throw error;
   }
 }
@@ -131,7 +119,7 @@ export async function sendMessageStreamingSSE(
   }
 
   try {
-    const response = await fetch('http://localhost:4000/api/stream/chat', {
+    const response = await fetch(`${API_URL}/api/stream/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -178,8 +166,8 @@ export async function sendMessageStreamingSSE(
             try {
               const data = JSON.parse(eventData);
               handleSSEEvent(eventType, data, callbacks);
-            } catch (e) {
-              console.warn('Failed to parse SSE data:', eventData);
+            } catch {
+              // Skip malformed SSE data
             }
             eventType = '';
             eventData = '';
@@ -188,7 +176,6 @@ export async function sendMessageStreamingSSE(
       }
     }
   } catch (error) {
-    console.error('Streaming error:', error);
     callbacks.onError(error instanceof Error ? error.message : 'Erreur de streaming');
   }
 }

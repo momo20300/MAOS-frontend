@@ -25,21 +25,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// Donnees mensuelles pour le graphique
-const monthlyData = [
-  { month: "Jan", ventes: 45000, achats: 32000, marge: 13000 },
-  { month: "Fev", ventes: 52000, achats: 38000, marge: 14000 },
-  { month: "Mar", ventes: 48000, achats: 35000, marge: 13000 },
-  { month: "Avr", ventes: 61000, achats: 42000, marge: 19000 },
-  { month: "Mai", ventes: 55000, achats: 40000, marge: 15000 },
-  { month: "Jun", ventes: 67000, achats: 45000, marge: 22000 },
-  { month: "Jul", ventes: 72000, achats: 48000, marge: 24000 },
-  { month: "Aou", ventes: 58000, achats: 41000, marge: 17000 },
-  { month: "Sep", ventes: 63000, achats: 44000, marge: 19000 },
-  { month: "Oct", ventes: 75000, achats: 52000, marge: 23000 },
-  { month: "Nov", ventes: 82000, achats: 55000, marge: 27000 },
-  { month: "Dec", ventes: 95000, achats: 62000, marge: 33000 },
-];
+// Monthly chart data — empty until real data available from API
+const EMPTY_MONTHLY_DATA = [
+  "Jan", "Fev", "Mar", "Avr", "Mai", "Jun",
+  "Jul", "Aou", "Sep", "Oct", "Nov", "Dec"
+].map(month => ({ month, ventes: 0, achats: 0, marge: 0 }));
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -64,7 +54,6 @@ export default function DashboardPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur de connexion au serveur';
       setError(message);
-      console.error("Erreur KPIs:", err);
     }
     setInitialLoading(false);
     setIsRefreshing(false);
@@ -76,8 +65,8 @@ export default function DashboardPage() {
       const data = await getDashboardKPIs();
       setKpis(data);
       setLastUpdate(new Date());
-    } catch (error) {
-      console.error("Erreur KPIs (silent):", error);
+    } catch {
+      // Silent refresh failed
     }
   };
 
@@ -123,7 +112,7 @@ export default function DashboardPage() {
               <p className="text-[10px] text-muted-foreground">Total des ventes</p>
               <div className="flex items-center gap-0.5">
                 <TrendingUp className="h-2.5 w-2.5 text-success-400" />
-                <span className="text-[10px] text-success-400 font-medium">+12.5%</span>
+                <span className="text-[10px] text-success-400 font-medium">ce mois</span>
               </div>
             </div>
           </CardContent>
@@ -174,7 +163,7 @@ export default function DashboardPage() {
               <p className="text-[10px] text-muted-foreground">Base clients</p>
               <div className="flex items-center gap-0.5">
                 <TrendingUp className="h-2.5 w-2.5 text-primary" />
-                <span className="text-[10px] text-primary font-medium">+8.2%</span>
+                <span className="text-[10px] text-primary font-medium">actifs</span>
               </div>
             </div>
           </CardContent>
@@ -189,22 +178,24 @@ export default function DashboardPage() {
             Performance {new Date().getFullYear()}
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[140px] pb-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={monthlyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} className="text-muted-foreground" />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v/1000}k`} className="text-muted-foreground" />
-              <Tooltip
-                formatter={(value) => [`${Number(value).toLocaleString()} MAD`]}
-                contentStyle={{ fontSize: 12 }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="ventes" name="Ventes" stroke="#6bbc8e" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="achats" name="Achats" stroke="#c3758c" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="marge" name="Marge Net" stroke="#3b82f6" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+        <CardContent className="pb-2">
+          <div className="h-[140px] w-full" style={{ minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <LineChart data={EMPTY_MONTHLY_DATA} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} className="text-muted-foreground" />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v / 1000}k`} className="text-muted-foreground" />
+                <Tooltip
+                  formatter={(value) => [`${Number(value).toLocaleString()} MAD`]}
+                  contentStyle={{ fontSize: 12 }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="ventes" name="Ventes" stroke="#6bbc8e" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="achats" name="Achats" stroke="#c3758c" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="marge" name="Marge Net" stroke="#3b82f6" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
 
@@ -237,9 +228,9 @@ export default function DashboardPage() {
                   <span className={cn(
                     "w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold",
                     index === 0 ? "bg-yellow-500/20 text-yellow-600" :
-                    index === 1 ? "bg-gray-400/20 text-gray-500" :
-                    index === 2 ? "bg-orange-500/20 text-orange-500" :
-                    "bg-muted text-muted-foreground"
+                      index === 1 ? "bg-gray-400/20 text-gray-500" :
+                        index === 2 ? "bg-orange-500/20 text-orange-500" :
+                          "bg-muted text-muted-foreground"
                   )}>
                     {index + 1}
                   </span>
