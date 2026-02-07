@@ -104,45 +104,78 @@ export default function MaosTalk() {
   // ===== TEXT-TO-SPEECH (TTS) =====
   // Use browser's Web Speech API for Arabic (FREE), API for other languages
   const speakWithBrowserTTS = (text: string, lang: string = 'ar-MA') => {
-    if ('speechSynthesis' in window) {
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang;
-      utterance.rate = 0.9; // Slightly slower for clarity
-      utterance.pitch = 1.0;
-
-      // Try to find an Arabic voice
-      const voices = window.speechSynthesis.getVoices();
-      const arabicVoice = voices.find(v =>
-        v.lang.startsWith('ar') || v.lang.includes('Arab')
-      );
-      if (arabicVoice) {
-        utterance.voice = arabicVoice;
-        console.log('🔊 Using Arabic voice:', arabicVoice.name);
-      }
-
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-
-      window.speechSynthesis.speak(utterance);
-      console.log('🔊 Browser TTS speaking (FREE)');
-    } else {
-      console.warn('Web Speech API not supported');
-      setIsSpeaking(false);
+    if (!ttsEnabled) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      console.warn('Browser TTS not supported');
+      return;
     }
+
+    console.log('🔊 Browser TTS: Starting speech synthesis');
+    console.log('🔊 Original text:', text.substring(0, 100));
+
+    // IMPORTANT: Replace "MAD" with "Dirhams" for better pronunciation
+    const processedText = text.replace(/\bMAD\b/g, 'Dirhams');
+    console.log('🔊 Processed text:', processedText.substring(0, 100));
+
+    const utterance = new SpeechSynthesisUtterance(processedText);
+    utterance.lang = lang;
+    utterance.rate = 0.85; // Slower for clearer pronunciation
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Try to find an Arabic voice
+    const voices = window.speechSynthesis.getVoices();
+    const arabicVoice = voices.find(v =>
+      v.lang.startsWith('ar') || v.lang.includes('Arab')
+    );
+    if (arabicVoice) {
+      utterance.voice = arabicVoice;
+      console.log('🔊 Using Arabic voice:', arabicVoice.name);
+    }
+
+    utterance.onstart = () => {
+      console.log('🔊 Browser TTS: Speech started');
+      setIsSpeaking(true);
+    };
+
+    utterance.onend = () => {
+      console.log('🔊 Browser TTS: Speech ended');
+      setIsSpeaking(false);
+    };
+
+    utterance.onerror = (event) => {
+      console.error('🔊 Browser TTS error:', event.error);
+      setIsSpeaking(false);
+    };
+
+    // Give MORE time for initialization to prevent audio cutoff
+    setTimeout(() => {
+      window.speechSynthesis.cancel(); // Clear queue
+    }, 150);
+
+    setTimeout(() => {
+      console.log('🔊 Browser TTS: Calling speak()');
+      window.speechSynthesis.speak(utterance);
+    }, 250);
   };
 
   const speakText = async (text: string, langCode?: string) => {
     if (!ttsEnabled) return;
 
+    // IMPORTANT: Replace "MAD" with "Dirhams" for better pronunciation
+    const processedText = text.replace(/\bMAD\b/g, 'Dirhams');
+    console.log('🔊 API TTS: Replaced MAD with Dirhams');
+
     try {
       setIsSpeaking(true);
 
+      // IMPORTANT: Replace "MAD" with "Dirhams" for better pronunciation
+      const processedText = text.replace(/\bMAD\b/g, 'Dirhams');
+      console.log('🔊 API TTS: Replaced MAD with Dirhams');
+
       // Call backend OpenAI TTS endpoint
       // IMPORTANT: Use charset=utf-8 to preserve Arabic/multilingual text
-      const ttsText = text.substring(0, 4000);
+      const ttsText = processedText.substring(0, 4000);
       console.log('🔊 TTS sending text:', ttsText.substring(0, 100), '...');
       console.log('🔊 TTS text encoding check:', encodeURIComponent(ttsText.substring(0, 50)));
 
@@ -189,15 +222,32 @@ export default function MaosTalk() {
       audioRef.current = audio;
 
       audio.onended = () => {
+        console.log('🔊 Audio ended successfully');
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
       };
-      audio.onerror = () => {
+      audio.onerror = (e) => {
+        console.error('🔊 Audio element error:', e);
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
       };
 
-      await audio.play();
+      console.log('🔊 Attempting to play audio...');
+      try {
+        await audio.play();
+        console.log('✅ Audio playback started successfully');
+      } catch (playError: any) {
+        console.error('❌ Audio play() failed:', playError);
+        console.error('❌ Error name:', playError.name);
+        console.error('❌ Error message:', playError.message);
+
+        // Check if it's an autoplay policy error
+        if (playError.name === 'NotAllowedError') {
+          console.error('🚫 Autoplay blocked by browser! User interaction required.');
+          alert('Votre navigateur bloque l\'audio automatique. Cliquez sur l\'icône de volume pour activer l\'audio.');
+        }
+        throw playError; // Re-throw to trigger fallback
+      }
     } catch (error) {
       console.error("TTS error:", error);
       // Fallback to browser TTS
@@ -222,61 +272,33 @@ export default function MaosTalk() {
 
   // ===== FILE UPLOAD & PARSING =====
   const parseExcelFile = async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          // Dynamically import xlsx library
-          const XLSX = await import('xlsx');
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+    const ExcelJS = await import('exceljs');
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
 
-          // Helper to convert Excel date serial to readable date
-          const formatExcelValue = (value: any): string => {
-            if (value === null || value === undefined) return '';
+    const formatCellValue = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      if (value instanceof Date) return value.toLocaleDateString('fr-FR');
+      if (typeof value === 'object' && value.result !== undefined) return String(value.result);
+      return String(value);
+    };
 
-            // If it's a Date object (from cellDates: true)
-            if (value instanceof Date) {
-              return value.toLocaleDateString('fr-FR');
-            }
-
-            // If it's a number that looks like an Excel date (between 40000 and 50000)
-            if (typeof value === 'number' && value > 40000 && value < 60000) {
-              try {
-                const date = new Date((value - 25569) * 86400 * 1000);
-                if (!isNaN(date.getTime())) {
-                  return date.toLocaleDateString('fr-FR');
-                }
-              } catch {
-                // Not a date, return as is
-              }
-            }
-
-            return String(value);
-          };
-
-          let content = '';
-          workbook.SheetNames.forEach(sheetName => {
-            const sheet = workbook.Sheets[sheetName];
-            if (!sheet) return;
-            const json = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, dateNF: 'dd/mm/yyyy' }) as any[][];
-
-            content += `=== Feuille: ${sheetName} ===\n`;
-            json.slice(0, 100).forEach((row, i) => {
-              const formattedRow = row.map(formatExcelValue);
-              content += formattedRow.join(' | ') + '\n';
-            });
-            content += '\n';
-          });
-
-          resolve(content);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
+    let content = '';
+    workbook.eachSheet((sheet) => {
+      content += `=== Feuille: ${sheet.name} ===\n`;
+      let rowCount = 0;
+      sheet.eachRow((row, rowNumber) => {
+        if (rowCount >= 100) return;
+        const values = row.values as any[];
+        const formattedRow = values.slice(1).map(formatCellValue);
+        content += formattedRow.join(' | ') + '\n';
+        rowCount++;
+      });
+      content += '\n';
     });
+
+    return content;
   };
 
   const parseTextFile = async (file: File): Promise<string> => {
@@ -975,11 +997,10 @@ export default function MaosTalk() {
                       </div>
                     )}
                     <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                        msg.role === "user"
-                          ? "bg-success-400 text-white"
-                          : "bg-muted"
-                      }`}
+                      className={`max-w-[80%] rounded-2xl px-4 py-2 ${msg.role === "user"
+                        ? "bg-success-400 text-white"
+                        : "bg-muted"
+                        }`}
                       dir={msg.direction || 'ltr'}
                     >
                       {/* Fichiers attachés - affichés DANS la bulle */}
@@ -988,11 +1009,10 @@ export default function MaosTalk() {
                           {msg.files.map((file, fileIdx) => (
                             <div
                               key={fileIdx}
-                              className={`flex items-center gap-2 text-xs px-2 py-1 rounded ${
-                                msg.role === "user"
-                                  ? "bg-success-500/50"
-                                  : "bg-muted-foreground/10"
-                              }`}
+                              className={`flex items-center gap-2 text-xs px-2 py-1 rounded ${msg.role === "user"
+                                ? "bg-success-500/50"
+                                : "bg-muted-foreground/10"
+                                }`}
                             >
                               <FileText className="w-4 h-4" />
                               <span className="font-medium">{file.name}</span>
@@ -1036,207 +1056,204 @@ export default function MaosTalk() {
 
           {/* Barre de chat */}
           <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-background/95 backdrop-blur-sm border-t shadow-2xl z-50">
-        <div className="max-w-4xl mx-auto p-4">
-          {/* Fichiers uploadés */}
-          {uploadedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {uploadedFiles.map((f, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
-                    f.analyzing
-                      ? 'bg-yellow-100 border border-yellow-300 dark:bg-yellow-900/30'
-                      : f.content
-                        ? 'bg-success-50 border border-success-200 dark:bg-green-900/30'
-                        : 'bg-muted'
-                  }`}
-                >
-                  {f.analyzing ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-yellow-600" />
-                  ) : f.preview ? (
-                    <img src={f.preview} alt="" className="w-8 h-8 object-cover rounded" />
-                  ) : (
-                    getFileIcon(f.file.type)
-                  )}
-                  <span className="max-w-32 truncate">{f.file.name}</span>
-                  {f.analyzing && <span className="text-yellow-600 text-xs">Analyse...</span>}
-                  {f.content && !f.analyzing && (
-                    <span className="text-success-400 text-xs font-medium">✓ Prêt ({Math.round(f.content.length / 1024)}KB)</span>
-                  )}
-                  <button
-                    onClick={() => removeFile(f.file)}
-                    className="text-muted-foreground hover:text-danger-400"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+            <div className="max-w-4xl mx-auto p-4">
+              {/* Fichiers uploadés */}
+              {uploadedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {uploadedFiles.map((f, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${f.analyzing
+                        ? 'bg-yellow-100 border border-yellow-300 dark:bg-yellow-900/30'
+                        : f.content
+                          ? 'bg-success-50 border border-success-200 dark:bg-green-900/30'
+                          : 'bg-muted'
+                        }`}
+                    >
+                      {f.analyzing ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-yellow-600" />
+                      ) : f.preview ? (
+                        <img src={f.preview} alt="" className="w-8 h-8 object-cover rounded" />
+                      ) : (
+                        getFileIcon(f.file.type)
+                      )}
+                      <span className="max-w-32 truncate">{f.file.name}</span>
+                      {f.analyzing && <span className="text-yellow-600 text-xs">Analyse...</span>}
+                      {f.content && !f.analyzing && (
+                        <span className="text-success-400 text-xs font-medium">✓ Prêt ({Math.round(f.content.length / 1024)}KB)</span>
+                      )}
+                      <button
+                        onClick={() => removeFile(f.file)}
+                        className="text-muted-foreground hover:text-danger-400"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          <div className="flex items-end gap-2">
-            <div className="flex-shrink-0 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center">
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
-                ) : isSpeaking ? (
-                  <Volume2 className="w-5 h-5 text-white animate-pulse" />
-                ) : (
-                  <Sparkles className="w-5 h-5 text-white" />
-                )}
+              <div className="flex items-end gap-2">
+                <div className="flex-shrink-0 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center">
+                    {isLoading ? (
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    ) : isSpeaking ? (
+                      <Volume2 className="w-5 h-5 text-white animate-pulse" />
+                    ) : (
+                      <Sparkles className="w-5 h-5 text-white" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Bouton TTS On/Off - Si MAOS parle, clic = stop audio. Sinon, toggle TTS */}
+                <Button
+                  size="icon"
+                  variant={isSpeaking ? "destructive" : ttsEnabled ? "default" : "outline"}
+                  onClick={() => {
+                    resetActivityTimer();
+                    if (isSpeaking) {
+                      // Si MAOS parle, on arrête juste l'audio (sans changer le setting TTS)
+                      stopSpeaking();
+                    } else {
+                      // Si pas en train de parler, on toggle le setting TTS
+                      setTtsEnabled(!ttsEnabled);
+                    }
+                  }}
+                  className={`h-10 w-10 rounded-lg flex-shrink-0 mb-2 ${isSpeaking ? 'animate-pulse' : ttsEnabled ? 'bg-success-400 hover:bg-success-500' : ''
+                    }`}
+                  title={isSpeaking ? "Arrêter MAOS" : ttsEnabled ? "Désactiver la voix" : "Activer la voix"}
+                >
+                  {isSpeaking ? (
+                    <VolumeX className="h-5 w-5" />
+                  ) : (
+                    <Volume2 className={`h-5 w-5 ${ttsEnabled ? 'text-white' : 'text-success-400'}`} />
+                  )}
+                </Button>
+
+                {/* Bouton Upload */}
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                  className="h-10 w-10 rounded-lg flex-shrink-0 mb-2 hover:bg-success-50 hover:border-success-400"
+                  title="Joindre un fichier"
+                >
+                  <Upload className="h-5 w-5 text-success-400" />
+                </Button>
+
+                {/* Bouton Micro */}
+                <Button
+                  size="icon"
+                  variant={isRecording ? "destructive" : "outline"}
+                  onClick={toggleRecording}
+                  disabled={isLoading || isTranscribing}
+                  className={`h-10 w-10 rounded-lg flex-shrink-0 mb-2 ${isRecording
+                    ? "animate-pulse"
+                    : "hover:bg-success-50 hover:border-success-400"
+                    }`}
+                  title={isRecording ? "Arrêter l'enregistrement" : "Parler à MAOS"}
+                >
+                  {isTranscribing ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : isRecording ? (
+                    <MicOff className="h-5 w-5" />
+                  ) : (
+                    <Mic className="h-5 w-5 text-success-400" />
+                  )}
+                </Button>
+
+                <div className="flex-1 relative">
+                  <textarea
+                    ref={textareaRef}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => { setIsExpanded(true); resetActivityTimer(); }}
+                    placeholder={isRecording ? "🎤 Enregistrement en cours..." : "Parle à MAOS..."}
+                    disabled={isLoading || isRecording}
+                    className="w-full resize-none rounded-xl border bg-background px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-success-400 transition-all overflow-hidden scrollbar-hide disabled:opacity-50"
+                    rows={1}
+                    style={{
+                      minHeight: "48px",
+                      maxHeight: "144px"
+                    }}
+                  />
+
+                  <Button
+                    size="icon"
+                    onClick={handleSend}
+                    disabled={(!message.trim() && uploadedFiles.length === 0) || isLoading || uploadedFiles.some(f => f.analyzing)}
+                    className="absolute right-2 bottom-2 h-8 w-8 rounded-lg bg-success-400 hover:bg-success-500 disabled:opacity-50 transition-all"
+                    title={uploadedFiles.some(f => f.analyzing) ? "Analyse du fichier en cours..." : "Envoyer"}
+                  >
+                    {uploadedFiles.some(f => f.analyzing) ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    MAOS AI {pack}
+                  </p>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <p className="text-xs text-muted-foreground">
+                    {ttsEnabled ? '🔊 Voix' : '🔇 Muet'}
+                  </p>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <button
+                    onClick={() => setUseStreaming(!useStreaming)}
+                    className={`text-xs flex items-center gap-1 ${useStreaming ? 'text-success-400 font-medium' : 'text-muted-foreground'}`}
+                    title={useStreaming ? 'Mode streaming activé (réponses rapides)' : 'Activer le streaming'}
+                  >
+                    <Zap className={`w-3 h-3 ${useStreaming ? 'fill-current' : ''}`} />
+                    {useStreaming ? 'Stream' : 'Standard'}
+                  </button>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  {/* Boutons Réduire et Masquer - toujours visibles */}
+                  {isExpanded ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setIsExpanded(false); resetActivityTimer(); }}
+                      className="h-5 px-2 text-xs text-muted-foreground hover:text-primary"
+                    >
+                      <Minimize2 className="w-3 h-3 mr-1" />
+                      Réduire
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setIsExpanded(true); resetActivityTimer(); }}
+                      className="h-5 px-2 text-xs text-success-400"
+                    >
+                      <Maximize2 className="w-3 h-3 mr-1" />
+                      Historique
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setIsMinimized(true)}
+                    className="h-5 px-2 text-xs text-orange-600 hover:text-orange-700"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Masquer
+                  </Button>
+                </div>
+                <p className="text-xs text-success-400 font-medium">
+                  {isRecording ? "🔴 Enregistrement..." : isTranscribing ? "🎤 Transcription..." : isSpeaking ? "🗣️ MAOS parle..." : "💚 En ligne"}
+                </p>
               </div>
             </div>
-
-            {/* Bouton TTS On/Off - Si MAOS parle, clic = stop audio. Sinon, toggle TTS */}
-            <Button
-              size="icon"
-              variant={isSpeaking ? "destructive" : ttsEnabled ? "default" : "outline"}
-              onClick={() => {
-                resetActivityTimer();
-                if (isSpeaking) {
-                  // Si MAOS parle, on arrête juste l'audio (sans changer le setting TTS)
-                  stopSpeaking();
-                } else {
-                  // Si pas en train de parler, on toggle le setting TTS
-                  setTtsEnabled(!ttsEnabled);
-                }
-              }}
-              className={`h-10 w-10 rounded-lg flex-shrink-0 mb-2 ${
-                isSpeaking ? 'animate-pulse' : ttsEnabled ? 'bg-success-400 hover:bg-success-500' : ''
-              }`}
-              title={isSpeaking ? "Arrêter MAOS" : ttsEnabled ? "Désactiver la voix" : "Activer la voix"}
-            >
-              {isSpeaking ? (
-                <VolumeX className="h-5 w-5" />
-              ) : (
-                <Volume2 className={`h-5 w-5 ${ttsEnabled ? 'text-white' : 'text-success-400'}`} />
-              )}
-            </Button>
-
-            {/* Bouton Upload */}
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-              className="h-10 w-10 rounded-lg flex-shrink-0 mb-2 hover:bg-success-50 hover:border-success-400"
-              title="Joindre un fichier"
-            >
-              <Upload className="h-5 w-5 text-success-400" />
-            </Button>
-
-            {/* Bouton Micro */}
-            <Button
-              size="icon"
-              variant={isRecording ? "destructive" : "outline"}
-              onClick={toggleRecording}
-              disabled={isLoading || isTranscribing}
-              className={`h-10 w-10 rounded-lg flex-shrink-0 mb-2 ${
-                isRecording
-                  ? "animate-pulse"
-                  : "hover:bg-success-50 hover:border-success-400"
-              }`}
-              title={isRecording ? "Arrêter l'enregistrement" : "Parler à MAOS"}
-            >
-              {isTranscribing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : isRecording ? (
-                <MicOff className="h-5 w-5" />
-              ) : (
-                <Mic className="h-5 w-5 text-success-400" />
-              )}
-            </Button>
-
-            <div className="flex-1 relative">
-              <textarea
-                ref={textareaRef}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onFocus={() => { setIsExpanded(true); resetActivityTimer(); }}
-                placeholder={isRecording ? "🎤 Enregistrement en cours..." : "Parle à MAOS..."}
-                disabled={isLoading || isRecording}
-                className="w-full resize-none rounded-xl border bg-background px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-success-400 transition-all overflow-hidden scrollbar-hide disabled:opacity-50"
-                rows={1}
-                style={{
-                  minHeight: "48px",
-                  maxHeight: "144px"
-                }}
-              />
-
-              <Button
-                size="icon"
-                onClick={handleSend}
-                disabled={(!message.trim() && uploadedFiles.length === 0) || isLoading || uploadedFiles.some(f => f.analyzing)}
-                className="absolute right-2 bottom-2 h-8 w-8 rounded-lg bg-success-400 hover:bg-success-500 disabled:opacity-50 transition-all"
-                title={uploadedFiles.some(f => f.analyzing) ? "Analyse du fichier en cours..." : "Envoyer"}
-              >
-                {uploadedFiles.some(f => f.analyzing) ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
           </div>
-
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-muted-foreground">
-                MAOS AI {pack}
-              </p>
-              <span className="text-xs text-muted-foreground">•</span>
-              <p className="text-xs text-muted-foreground">
-                {ttsEnabled ? '🔊 Voix' : '🔇 Muet'}
-              </p>
-              <span className="text-xs text-muted-foreground">•</span>
-              <button
-                onClick={() => setUseStreaming(!useStreaming)}
-                className={`text-xs flex items-center gap-1 ${useStreaming ? 'text-success-400 font-medium' : 'text-muted-foreground'}`}
-                title={useStreaming ? 'Mode streaming activé (réponses rapides)' : 'Activer le streaming'}
-              >
-                <Zap className={`w-3 h-3 ${useStreaming ? 'fill-current' : ''}`} />
-                {useStreaming ? 'Stream' : 'Standard'}
-              </button>
-              <span className="text-xs text-muted-foreground">•</span>
-              {/* Boutons Réduire et Masquer - toujours visibles */}
-              {isExpanded ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => { setIsExpanded(false); resetActivityTimer(); }}
-                  className="h-5 px-2 text-xs text-muted-foreground hover:text-primary"
-                >
-                  <Minimize2 className="w-3 h-3 mr-1" />
-                  Réduire
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => { setIsExpanded(true); resetActivityTimer(); }}
-                  className="h-5 px-2 text-xs text-success-400"
-                >
-                  <Maximize2 className="w-3 h-3 mr-1" />
-                  Historique
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setIsMinimized(true)}
-                className="h-5 px-2 text-xs text-orange-600 hover:text-orange-700"
-              >
-                <X className="w-3 h-3 mr-1" />
-                Masquer
-              </Button>
-            </div>
-            <p className="text-xs text-success-400 font-medium">
-              {isRecording ? "🔴 Enregistrement..." : isTranscribing ? "🎤 Transcription..." : isSpeaking ? "🗣️ MAOS parle..." : "💚 En ligne"}
-            </p>
-          </div>
-        </div>
-      </div>
         </>
       )}
     </>

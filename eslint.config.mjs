@@ -15,6 +15,8 @@ export default defineConfig([
       // Allow setState in useEffect for legitimate use cases (hydration, subscriptions)
       // This rule is overly strict and blocks common patterns
       'react-hooks/set-state-in-effect': 'off',
+      // French text in JSX contains apostrophes — not a real issue
+      'react/no-unescaped-entities': 'off',
     },
   },
 ])

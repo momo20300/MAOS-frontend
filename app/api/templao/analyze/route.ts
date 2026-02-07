@@ -224,11 +224,11 @@ async function analyzeExcel(
   customPrompt?: string
 ): Promise<{ analysis: string; rawContent: string; extractedData: Record<string, unknown> }> {
   try {
-    // Dynamic import for xlsx
-    const XLSX = await import('xlsx');
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer);
 
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheetNames = workbook.SheetNames;
+    const sheetNames = workbook.worksheets.map(s => s.name);
 
     let rawContent = '';
     const extractedData: Record<string, unknown> = {
@@ -236,27 +236,29 @@ async function analyzeExcel(
       sheetCount: sheetNames.length,
     };
 
-    // Process each sheet
+    // Process each sheet (limit to 5)
     const sheetsData: Record<string, unknown[]> = {};
 
-    for (const sheetName of sheetNames.slice(0, 5)) { // Limit to 5 sheets
-      const sheet = workbook.Sheets[sheetName];
-      if (!sheet) continue; // Skip if sheet not found
-      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
+    for (const sheet of workbook.worksheets.slice(0, 5)) {
+      const jsonData: unknown[][] = [];
+      sheet.eachRow((row, rowNumber) => {
+        if (rowNumber > 100) return;
+        const values = row.values as any[];
+        jsonData.push(values.slice(1)); // ExcelJS row.values is 1-indexed
+      });
 
       // Convert to readable text
       const sheetText = jsonData
-        .slice(0, 100) // Limit rows
-        .map((row: unknown[]) => row.join(' | '))
+        .map((row: unknown[]) => row.map(v => v ?? '').join(' | '))
         .join('\n');
 
-      rawContent += `\n=== Feuille: ${sheetName} ===\n${sheetText}\n`;
-      sheetsData[sheetName] = jsonData.slice(0, 50);
+      rawContent += `\n=== Feuille: ${sheet.name} ===\n${sheetText}\n`;
+      sheetsData[sheet.name] = jsonData.slice(0, 50);
 
       // Extract stats
       const numericValues = jsonData.flat().filter((v): v is number => typeof v === 'number');
       if (numericValues.length > 0) {
-        extractedData[`${sheetName}_stats`] = {
+        extractedData[`${sheet.name}_stats`] = {
           rowCount: jsonData.length,
           sum: numericValues.reduce((a, b) => a + b, 0),
           avg: numericValues.reduce((a, b) => a + b, 0) / numericValues.length,
