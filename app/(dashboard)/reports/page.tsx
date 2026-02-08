@@ -152,8 +152,9 @@ export default function ReportsPage() {
   // Group by category
   const grouped: Record<string, ReportItem[]> = {};
   for (const r of catalog) {
-    if (!grouped[r.category]) grouped[r.category] = [];
-    grouped[r.category].push(r);
+    const cat = r.category;
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat]!.push(r);
   }
 
   if (loading) {

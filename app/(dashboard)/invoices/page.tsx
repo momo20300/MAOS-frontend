@@ -403,7 +403,7 @@ export default function InvoicesPage() {
         onSubmit={handleCreateInvoice}
         customers={customers}
         items={items}
-        type="order"
+        type="invoice"
       />
     </div>
   );

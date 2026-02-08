@@ -827,9 +827,10 @@ export const importFromCSV = async <T extends Record<string, unknown>>(
           });
 
           // Skip rows where the first column (usually name) is empty
-          const firstVal = record[headers[0]];
+          const firstHeader = headers[0] ?? '';
+          const firstVal = record[firstHeader];
           if (!firstVal || !firstVal.trim()) {
-            results.errors.push(`Ligne ${i + 1}: Champ obligatoire "${headers[0]}" vide`);
+            results.errors.push(`Ligne ${i + 1}: Champ obligatoire "${firstHeader}" vide`);
             continue;
           }
 

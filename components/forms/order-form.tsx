@@ -40,7 +40,7 @@ interface OrderFormProps {
   onSubmit: (data: OrderFormData) => Promise<void>;
   customers: Array<{ name: string; customer_name: string }>;
   items: Array<{ item_code: string; item_name: string; standard_rate: number }>;
-  type?: "order" | "quotation";
+  type?: "order" | "quotation" | "invoice";
 }
 
 export function OrderForm({
@@ -113,7 +113,7 @@ export function OrderForm({
     }
   };
 
-  const title = type === "order" ? "Nouvelle Commande" : "Nouveau Devis";
+  const title = type === "order" ? "Nouvelle Commande" : type === "invoice" ? "Nouvelle Facture" : "Nouveau Devis";
   const icon = type === "order" ? ShoppingCart : Package;
   const Icon = icon;
 
@@ -122,7 +122,7 @@ export function OrderForm({
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
-          <DocumentHeader title={type === "order" ? "Commande (SO)" : "Devis (QTN)"} />
+          <DocumentHeader title={type === "order" ? "Commande (SO)" : type === "invoice" ? "Facture (SINV)" : "Devis (QTN)"} />
 
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -158,7 +158,7 @@ export function OrderForm({
               <div className="grid gap-2">
                 <Label htmlFor="delivery_date" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  {type === "order" ? "Date de livraison" : "Valide jusqu'au"}
+                  {type === "order" ? "Date de livraison" : type === "invoice" ? "Date d'echeance" : "Valide jusqu'au"}
                 </Label>
                 <Input
                   id="delivery_date"
@@ -284,7 +284,7 @@ export function OrderForm({
               className="rounded-xl"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Creer {type === "order" ? "la commande" : "le devis"}
+              Creer {type === "order" ? "la commande" : type === "invoice" ? "la facture" : "le devis"}
             </Button>
           </DialogFooter>
         </form>
