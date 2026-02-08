@@ -19,6 +19,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { messages, context, images, files, forcedLang } = body;
 
+    if (!messages || !Array.isArray(messages)) {
+      return NextResponse.json({
+        message: 'Bonjour! Je suis MAOS, votre assistant intelligent. Comment puis-je vous aider?'
+      });
+    }
+
     // Get the last user message
     const lastUserMessage = messages
       .filter((m: { role: string }) => m.role === 'user')

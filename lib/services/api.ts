@@ -103,6 +103,37 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
   }
 }
 
+// ============================================================================
+// Monthly Performance Chart Data
+// ============================================================================
+
+export interface MonthlyPerformanceData {
+  month: string;
+  ventes: number;
+  achats: number;
+  marge: number;
+}
+
+export async function getMonthlyPerformance(): Promise<MonthlyPerformanceData[]> {
+  const emptyData: MonthlyPerformanceData[] = [
+    'Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun',
+    'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'
+  ].map(month => ({ month, ventes: 0, achats: 0, marge: 0 }));
+
+  try {
+    const response = await authFetch('/api/dashboard/monthly-performance');
+    if (!response.ok) {
+      console.debug('Monthly performance endpoint not available');
+      return emptyData;
+    }
+    const data = await response.json();
+    return data.data || emptyData;
+  } catch (error) {
+    console.debug('Monthly performance not available:', error);
+    return emptyData;
+  }
+}
+
 export async function getDashboardKPIs(): Promise<DashboardKPIs> {
   try {
     const response = await authFetch('/api/dashboard/kpis');

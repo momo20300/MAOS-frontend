@@ -32,6 +32,7 @@ export default function MaosTalk() {
   const expectedAudioCountRef = useRef(0); // Track how many sentences we expect
   const streamingCompleteRef = useRef(false); // Track if streaming is done
   const isPlayingRef = useRef(false); // MUTEX: Prevent multiple simultaneous playbacks
+  const audioUnlockedRef = useRef(false); // Track if browser audio has been unlocked
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -109,7 +110,7 @@ export default function MaosTalk() {
     if (!ttsEnabled) return;
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
-    const processedText = text.replace(/\bMAD\b/g, 'Dirhams');
+    const processedText = text.replace(/\bMAD\b/gi, 'dirhams');
     const utterance = new SpeechSynthesisUtterance(processedText);
     utterance.lang = lang;
     utterance.rate = 0.85;
@@ -140,7 +141,7 @@ export default function MaosTalk() {
   const speakText = async (text: string, langCode?: string) => {
     if (!ttsEnabled) return;
 
-    const processedText = text.replace(/\bMAD\b/g, 'Dirhams');
+    const processedText = text.replace(/\bMAD\b/gi, 'dirhams');
 
     try {
       setIsSpeaking(true);
@@ -541,10 +542,31 @@ export default function MaosTalk() {
     }
   };
 
+  // Unlock browser audio playback on first user gesture
+  // Browsers block audio.play() unless triggered by a user interaction
+  const unlockBrowserAudio = () => {
+    if (audioUnlockedRef.current) return;
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const buf = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+        audioUnlockedRef.current = true;
+      }
+    } catch { /* ignore */ }
+  };
+
   // ===== STREAMING SEND =====
   // Sends message with real-time streaming for faster perceived response
   const handleSendStreaming = async (textToSend: string) => {
     if (!textToSend.trim() || isLoading) return;
+
+    // Unlock audio on first user gesture (fixes first-message TTS)
+    unlockBrowserAudio();
 
     setMessage("");
     setStreamingText("");
@@ -712,6 +734,8 @@ export default function MaosTalk() {
   };
 
   const handleSend = async () => {
+    // Unlock audio on user gesture
+    unlockBrowserAudio();
     // Check if any file is still being analyzed
     const filesStillAnalyzing = uploadedFiles.some(f => f.analyzing);
     if (filesStillAnalyzing) return;

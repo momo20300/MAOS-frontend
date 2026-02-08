@@ -4,130 +4,143 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Plus, TrendingUp, TrendingDown, Download, Printer, FileSpreadsheet, Filter } from "lucide-react";
-import { authFetch } from "@/lib/services/auth";
+import { Input } from "@/components/ui/input";
+import {
+  getPaymentEntries, getCustomers, getSuppliers, createPaymentEntry,
+  exportToCSV, printDocument
+} from "@/lib/services/erpnext";
+import { PaymentForm } from "@/components/forms";
+import {
+  CreditCard, TrendingUp, TrendingDown, Search, Plus, Download, Printer,
+  FileSpreadsheet, ChevronLeft, ChevronRight, Calendar
+} from "lucide-react";
 
 interface Payment {
   name: string;
   party_name: string;
+  party_type: string;
   payment_type: string;
   posting_date: string;
   paid_amount: number;
   status: string;
+  reference_no: string;
+  docstatus: number;
 }
+
+interface Customer { name: string; customer_name: string; }
+interface Supplier { name: string; supplier_name: string; }
+
+const columns = [
+  { key: "name", label: "Reference" },
+  { key: "party_name", label: "Tiers" },
+  { key: "payment_type", label: "Type" },
+  { key: "posting_date", label: "Date" },
+  { key: "paid_amount", label: "Montant (MAD)" },
+  { key: "status", label: "Statut" },
+];
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const [filter, setFilter] = useState<"all" | "receive" | "pay">("all");
+  const pageSize = 10;
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [paymentsData, customersData, suppliersData] = await Promise.all([
+      getPaymentEntries(),
+      getCustomers(),
+      getSuppliers(),
+    ]);
+    setPayments(paymentsData);
+    setFilteredPayments(paymentsData);
+    setCustomers(customersData);
+    setSuppliers(suppliersData);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    let filtered = payments.filter(
+      p => p.party_name?.toLowerCase().includes(search.toLowerCase()) ||
+           p.name?.toLowerCase().includes(search.toLowerCase()) ||
+           p.reference_no?.toLowerCase().includes(search.toLowerCase())
+    );
+    if (statusFilter === "receive") {
+      filtered = filtered.filter(p => p.payment_type === "Receive");
+    } else if (statusFilter === "pay") {
+      filtered = filtered.filter(p => p.payment_type === "Pay");
+    }
+    setFilteredPayments(filtered);
+    setCurrentPage(1);
+  }, [search, statusFilter, payments]);
+
+  const totalReceived = payments.filter(p => p.payment_type === "Receive").reduce((sum, p) => sum + (p.paid_amount || 0), 0);
+  const totalPaid = payments.filter(p => p.payment_type === "Pay").reduce((sum, p) => sum + (p.paid_amount || 0), 0);
+  const totalPages = Math.ceil(filteredPayments.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginated = filteredPayments.slice(startIndex, startIndex + pageSize);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 4000);
   };
 
-  useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        const response = await authFetch('/api/erp/accounting/payments');
-        if (response.ok) {
-          const data = await response.json();
-          setPayments(data.data || []);
-        }
-      } catch (error) {
-        // silently handle error
-      }
-      setLoading(false);
-    };
-    fetchPayments();
-  }, []);
-
-  const received = payments.filter(p => p.payment_type === 'Receive').reduce((sum, p) => sum + (p.paid_amount || 0), 0);
-  const paid = payments.filter(p => p.payment_type === 'Pay').reduce((sum, p) => sum + (p.paid_amount || 0), 0);
-
-  const filteredPayments = payments.filter(p => {
-    if (filter === "all") return true;
-    if (filter === "receive") return p.payment_type === "Receive";
-    if (filter === "pay") return p.payment_type === "Pay";
-    return true;
-  });
-
-  const handleExportCSV = () => {
-    if (filteredPayments.length === 0) {
-      showToast("Aucune donnee a exporter", "error");
-      return;
+  const handleCreate = async (data: {
+    payment_type: "Receive" | "Pay";
+    party_type: "Customer" | "Supplier";
+    party: string;
+    paid_amount: number;
+    posting_date: string;
+    reference_no: string;
+  }) => {
+    try {
+      await createPaymentEntry(data);
+      showToast("Paiement cree avec succes", "success");
+      fetchData();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la creation", "error");
+      throw error;
     }
-    const headers = ["Reference", "Tiers", "Type", "Date", "Montant", "Statut"];
-    const csvContent = [
-      headers.join(","),
-      ...filteredPayments.map(p => [
-        p.name,
-        `"${p.party_name}"`,
-        p.payment_type === 'Receive' ? 'Encaissement' : 'Decaissement',
-        p.posting_date,
-        p.paid_amount,
-        p.status
-      ].join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `paiements_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    showToast("Export CSV telecharge avec succes", "success");
-  };
-
-  const handlePrint = () => {
-    window.print();
-    showToast("Impression lancee", "success");
-  };
-
-  const handleViewDetails = (paymentName: string) => {
-    showToast(`Details de ${paymentName} - Fonctionnalite disponible prochainement`, "success");
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-pulse text-lg">Chargement des paiements...</div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          Chargement des paiements...
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg transition-all duration-300 ${
+        <div className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-sm animate-in slide-in-from-bottom-5 ${
           toast.type === "success"
-            ? "bg-success-400 text-white"
-            : "bg-danger-400 text-white"
-        }`}>
-          {toast.message}
-        </div>
+            ? "border-success-100 bg-success-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
+            : "border-danger-100 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
+        }`}>{toast.message}</div>
       )}
 
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Paiements</h2>
-          <p className="text-muted-foreground">Gerez vos encaissements et decaissements ({payments.length} paiements)</p>
+          <p className="text-muted-foreground">Gestion des encaissements et decaissements ({payments.length} paiements)</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportCSV} className="rounded-xl">
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button variant="outline" onClick={handlePrint} className="rounded-xl">
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimer
-          </Button>
-          <Button onClick={() => showToast("Fonctionnalite disponible prochainement", "success")} className="rounded-xl">
-            <Plus className="mr-2 h-4 w-4" />
-            Nouveau Paiement
-          </Button>
-        </div>
+        <Button onClick={() => setFormOpen(true)} className="rounded-xl">
+          <Plus className="mr-2 h-4 w-4" /> Nouveau Paiement
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -138,6 +151,7 @@ export default function PaymentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{payments.length}</div>
+            <p className="text-xs text-muted-foreground">Paiements</p>
           </CardContent>
         </Card>
         <Card className="rounded-2xl">
@@ -146,7 +160,8 @@ export default function PaymentsPage() {
             <TrendingUp className="h-4 w-4 text-success-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success-400">{received.toLocaleString()} MAD</div>
+            <div className="text-2xl font-bold text-success-400">{totalReceived.toLocaleString()} MAD</div>
+            <p className="text-xs text-muted-foreground">Recus</p>
           </CardContent>
         </Card>
         <Card className="rounded-2xl">
@@ -155,72 +170,60 @@ export default function PaymentsPage() {
             <TrendingDown className="h-4 w-4 text-danger-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-danger-400">{paid.toLocaleString()} MAD</div>
+            <div className="text-2xl font-bold text-danger-400">{totalPaid.toLocaleString()} MAD</div>
+            <p className="text-xs text-muted-foreground">Payes</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="rounded-2xl">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Historique des paiements</CardTitle>
-          <div className="flex gap-2">
-            <div className="flex gap-1 bg-muted p-1 rounded-xl">
-              <Button
-                variant={filter === "all" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setFilter("all")}
-                className="rounded-xl"
-              >
-                Tous
-              </Button>
-              <Button
-                variant={filter === "receive" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setFilter("receive")}
-                className="rounded-xl"
-              >
-                Encaissements
-              </Button>
-              <Button
-                variant={filter === "pay" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setFilter("pay")}
-                className="rounded-xl"
-              >
-                Decaissements
-              </Button>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => showToast("Fonctionnalite disponible prochainement", "success")} className="rounded-xl">
-              <Download className="h-4 w-4 mr-2" />
-              Exporter
-            </Button>
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Rechercher un paiement..." value={search} onChange={e => setSearch(e.target.value)}
+              className="pl-9 h-10 rounded-xl bg-muted/50 border-0 focus-visible:ring-1" />
           </div>
-        </CardHeader>
+          <div className="flex gap-2">
+            {[{ key: "all", label: "Tous" }, { key: "receive", label: "Encaissements" }, { key: "pay", label: "Decaissements" }].map(f => (
+              <Button key={f.key} variant={statusFilter === f.key ? "default" : "outline"} size="sm"
+                onClick={() => setStatusFilter(f.key)} className="rounded-xl">{f.label}</Button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => { exportToCSV(filteredPayments, columns, "paiements-maos"); showToast("Export CSV telecharge", "success"); }} className="rounded-xl">
+            <Download className="h-4 w-4 mr-2" /> Exporter CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => printDocument(filteredPayments, columns, "Liste des Paiements")} className="rounded-xl">
+            <Printer className="h-4 w-4 mr-2" /> Imprimer
+          </Button>
+        </div>
+      </div>
+
+      <Card className="rounded-2xl">
+        <CardHeader><CardTitle>Historique des paiements ({filteredPayments.length})</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {filteredPayments.map((payment) => (
-              <div
-                key={payment.name}
-                className="flex items-center justify-between p-4 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
-                onClick={() => handleViewDetails(payment.name)}
-              >
+            {paginated.map(payment => (
+              <div key={payment.name} className="flex items-center justify-between p-4 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer">
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{payment.name}</span>
-                    <Badge
-                      variant={payment.payment_type === 'Receive' ? 'default' : 'secondary'}
-                      className="rounded-xl"
-                    >
-                      {payment.payment_type === 'Receive' ? 'Encaissement' : 'Decaissement'}
+                    <Badge variant={payment.payment_type === "Receive" ? "default" : "secondary"} className="rounded-lg">
+                      {payment.payment_type === "Receive" ? "Encaissement" : "Decaissement"}
                     </Badge>
                   </div>
                   <div className="text-sm text-muted-foreground">{payment.party_name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    Date: {new Date(payment.posting_date).toLocaleDateString('fr-FR')}
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(payment.posting_date).toLocaleDateString("fr-FR")}
+                    </span>
+                    {payment.reference_no && <span>Ref: {payment.reference_no}</span>}
                   </div>
                 </div>
-                <div className={`text-lg font-bold ${payment.payment_type === 'Receive' ? 'text-success-400' : 'text-danger-400'}`}>
-                  {payment.payment_type === 'Receive' ? '+' : '-'}{payment.paid_amount?.toLocaleString()} MAD
+                <div className={`text-lg font-bold ${payment.payment_type === "Receive" ? "text-success-400" : "text-danger-400"}`}>
+                  {payment.payment_type === "Receive" ? "+" : "-"}{(payment.paid_amount || 0).toLocaleString()} MAD
                 </div>
               </div>
             ))}
@@ -230,18 +233,31 @@ export default function PaymentsPage() {
 
       {filteredPayments.length === 0 && (
         <div className="text-center py-12">
-          <CreditCard className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-semibold">Aucun paiement</h3>
-          <p className="text-muted-foreground">
-            {filter === "all"
-              ? "Creez votre premier paiement"
-              : filter === "receive"
-                ? "Aucun encaissement trouve"
-                : "Aucun decaissement trouve"
-            }
-          </p>
+          <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
+          <h3 className="mt-4 text-lg font-semibold">Aucun paiement trouve</h3>
+          <p className="text-muted-foreground">Essayez une autre recherche</p>
+          <Button onClick={() => setFormOpen(true)} className="mt-4 rounded-xl">
+            <Plus className="mr-2 h-4 w-4" /> Nouveau Paiement
+          </Button>
         </div>
       )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2">
+          <p className="text-sm text-muted-foreground">{startIndex + 1}-{Math.min(startIndex + pageSize, filteredPayments.length)} sur {filteredPayments.length}</p>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="px-3 text-sm font-medium">{currentPage} / {totalPages}</span>
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 w-8 p-0 rounded-lg">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <PaymentForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreate} customers={customers} suppliers={suppliers} />
     </div>
   );
 }

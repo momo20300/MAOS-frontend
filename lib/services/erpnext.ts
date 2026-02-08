@@ -7,6 +7,22 @@
 import { authFetch } from './auth';
 
 // ============================================================================
+// Helper: handle backend responses that return { success, data, error }
+// Backend controllers return HTTP 200 even on errors, so we must check .success
+// ============================================================================
+
+const handleMutationResponse = async (response: Response, defaultError: string) => {
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.error || data?.message || defaultError);
+  }
+  if (data.success === false) {
+    throw new Error(data.error || defaultError);
+  }
+  return data;
+};
+
+// ============================================================================
 // Dashboard KPIs
 // ============================================================================
 
@@ -171,22 +187,24 @@ export const getStockItems = async () => {
 
 export const createCustomer = async (customer: {
   customer_name: string;
-  customer_type: 'Company' | 'Individual';
+  customer_type?: 'Company' | 'Individual';
   customer_group?: string;
   territory?: string;
   mobile_no?: string;
   email_id?: string;
 }) => {
+  const payload = {
+    ...customer,
+    customer_type: customer.customer_type || 'Company',
+    customer_name: (customer.customer_name || '').trim(),
+  };
+  if (!payload.customer_name) throw new Error('customer_name est obligatoire');
   const response = await authFetch('/api/crm/customers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(customer),
+    body: JSON.stringify(payload),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation du client');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation du client');
 };
 
 export const updateCustomer = async (name: string, customer: Partial<{
@@ -202,22 +220,14 @@ export const updateCustomer = async (name: string, customer: Partial<{
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(customer),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la mise a jour du client');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la mise a jour du client');
 };
 
 export const deleteCustomer = async (name: string) => {
   const response = await authFetch(`/api/crm/customers/${encodeURIComponent(name)}`, {
     method: 'DELETE',
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la suppression du client');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la suppression du client');
 };
 
 // ============================================================================
@@ -230,16 +240,18 @@ export const createSupplier = async (supplier: {
   supplier_group?: string;
   country?: string;
 }) => {
+  const payload = {
+    ...supplier,
+    supplier_type: supplier.supplier_type || 'Company',
+    supplier_name: (supplier.supplier_name || '').trim(),
+  };
+  if (!payload.supplier_name) throw new Error('supplier_name est obligatoire');
   const response = await authFetch('/api/purchase/suppliers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(supplier),
+    body: JSON.stringify(payload),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation du fournisseur');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation du fournisseur');
 };
 
 export const updateSupplier = async (name: string, supplier: Partial<{
@@ -253,22 +265,14 @@ export const updateSupplier = async (name: string, supplier: Partial<{
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(supplier),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la mise a jour du fournisseur');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la mise a jour du fournisseur');
 };
 
 export const deleteSupplier = async (name: string) => {
   const response = await authFetch(`/api/purchase/suppliers/${encodeURIComponent(name)}`, {
     method: 'DELETE',
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la suppression du fournisseur');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la suppression du fournisseur');
 };
 
 // ============================================================================
@@ -284,16 +288,20 @@ export const createItem = async (item: {
   is_stock_item?: boolean;
   description?: string;
 }) => {
+  const payload = {
+    ...item,
+    item_code: (item.item_code || '').trim(),
+    item_name: (item.item_name || item.item_code || '').trim(),
+    stock_uom: item.stock_uom || 'Nos',
+    standard_rate: Number(item.standard_rate) || 0,
+  };
+  if (!payload.item_code) throw new Error('item_code est obligatoire');
   const response = await authFetch('/api/stock/items', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(item),
+    body: JSON.stringify(payload),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation du produit');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation du produit');
 };
 
 export const updateItem = async (name: string, item: Partial<{
@@ -309,22 +317,14 @@ export const updateItem = async (name: string, item: Partial<{
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(item),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la mise a jour du produit');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la mise a jour du produit');
 };
 
 export const deleteItem = async (name: string) => {
   const response = await authFetch(`/api/stock/items/${encodeURIComponent(name)}`, {
     method: 'DELETE',
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la suppression du produit');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la suppression du produit');
 };
 
 // ============================================================================
@@ -344,11 +344,7 @@ export const createLead = async (lead: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(lead),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation du lead');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation du lead');
 };
 
 // ============================================================================
@@ -369,11 +365,7 @@ export const createSalesOrder = async (order: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(order),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation de la commande');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation de la commande');
 };
 
 // ============================================================================
@@ -394,11 +386,7 @@ export const createInvoice = async (invoice: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(invoice),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation de la facture');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation de la facture');
 };
 
 // ============================================================================
@@ -431,11 +419,7 @@ export const createQuotation = async (quotation: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(quotation),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation du devis');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation du devis');
 };
 
 // ============================================================================
@@ -468,11 +452,191 @@ export const createPurchaseOrder = async (order: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(order),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation de la commande achat');
+  return handleMutationResponse(response, 'Erreur lors de la creation de la commande achat');
+};
+
+// ============================================================================
+// Delivery Notes
+// ============================================================================
+
+export const getDeliveryNotes = async () => {
+  try {
+    const response = await authFetch('/api/sales/delivery-notes');
+    if (!response.ok) throw new Error('Failed to fetch delivery notes');
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Get delivery notes error:', error);
+    return [];
   }
-  return response.json();
+};
+
+export const createDeliveryNote = async (note: {
+  customer: string;
+  posting_date?: string;
+  items: Array<{
+    item_code: string;
+    qty: number;
+    rate?: number;
+  }>;
+}) => {
+  const response = await authFetch('/api/sales/delivery-notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(note),
+  });
+  return handleMutationResponse(response, 'Erreur lors de la creation du bon de livraison');
+};
+
+// ============================================================================
+// Purchase Invoices
+// ============================================================================
+
+export const getPurchaseInvoices = async () => {
+  try {
+    const response = await authFetch('/api/purchase/invoices');
+    if (!response.ok) throw new Error('Failed to fetch purchase invoices');
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Get purchase invoices error:', error);
+    return [];
+  }
+};
+
+export const createPurchaseInvoice = async (invoice: {
+  supplier: string;
+  due_date?: string;
+  items: Array<{
+    item_code: string;
+    qty: number;
+    rate?: number;
+  }>;
+}) => {
+  const response = await authFetch('/api/purchase/invoices', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(invoice),
+  });
+  return handleMutationResponse(response, 'Erreur lors de la creation de la facture achat');
+};
+
+// ============================================================================
+// Purchase Receipts
+// ============================================================================
+
+export const getPurchaseReceipts = async () => {
+  try {
+    const response = await authFetch('/api/purchase/receipts');
+    if (!response.ok) throw new Error('Failed to fetch purchase receipts');
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Get purchase receipts error:', error);
+    return [];
+  }
+};
+
+export const createPurchaseReceipt = async (receipt: {
+  supplier: string;
+  posting_date?: string;
+  items: Array<{
+    item_code: string;
+    qty: number;
+    rate?: number;
+  }>;
+}) => {
+  const response = await authFetch('/api/purchase/receipts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(receipt),
+  });
+  return handleMutationResponse(response, 'Erreur lors de la creation de la reception');
+};
+
+// ============================================================================
+// Payment Entries
+// ============================================================================
+
+export const getPaymentEntries = async () => {
+  try {
+    const response = await authFetch('/api/erp/accounting/payments');
+    if (!response.ok) throw new Error('Failed to fetch payment entries');
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Get payment entries error:', error);
+    return [];
+  }
+};
+
+export const createPaymentEntry = async (payment: {
+  payment_type: 'Receive' | 'Pay';
+  party_type: 'Customer' | 'Supplier';
+  party: string;
+  paid_amount: number;
+  posting_date?: string;
+  reference_no?: string;
+  reference_date?: string;
+  paid_from?: string;
+  paid_to?: string;
+}) => {
+  const response = await authFetch('/api/erp/accounting/payments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payment),
+  });
+  return handleMutationResponse(response, 'Erreur lors de la creation du paiement');
+};
+
+// ============================================================================
+// Journal Entries (Ecritures Comptables)
+// ============================================================================
+
+export const getJournalEntries = async () => {
+  try {
+    const response = await authFetch('/api/erp/accounting/journal-entries');
+    if (!response.ok) throw new Error('Failed to fetch journal entries');
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Get journal entries error:', error);
+    return [];
+  }
+};
+
+export const createJournalEntry = async (entry: {
+  posting_date?: string;
+  voucher_type?: string;
+  accounts: Array<{
+    account: string;
+    debit_in_account_currency?: number;
+    credit_in_account_currency?: number;
+  }>;
+  user_remark?: string;
+}) => {
+  const response = await authFetch('/api/erp/accounting/journal-entries', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry),
+  });
+  return handleMutationResponse(response, 'Erreur lors de la creation de l\'ecriture comptable');
+};
+
+// ============================================================================
+// Accounts (Plan Comptable)
+// ============================================================================
+
+export const getAccounts = async () => {
+  try {
+    const response = await authFetch('/api/erp/accounting/accounts');
+    if (!response.ok) throw new Error('Failed to fetch accounts');
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Get accounts error:', error);
+    return [];
+  }
 };
 
 // ============================================================================
@@ -508,11 +672,7 @@ export const createEmployee = async (employee: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(employee),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation de l\'employe');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation de l\'employe');
 };
 
 // ============================================================================
@@ -542,11 +702,7 @@ export const createWorkOrder = async (workOrder: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(workOrder),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation de l\'ordre de fabrication');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation de l\'ordre de fabrication');
 };
 
 // ============================================================================
@@ -581,11 +737,7 @@ export const createBOM = async (bom: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(bom),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation de la nomenclature');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation de la nomenclature');
 };
 
 // ============================================================================
@@ -619,11 +771,20 @@ export const createStockEntry = async (entry: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(entry),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la creation du mouvement de stock');
-  }
-  return response.json();
+  return handleMutationResponse(response, 'Erreur lors de la creation du mouvement de stock');
+};
+
+// ============================================================================
+// Rename Document
+// ============================================================================
+
+export const renameDocument = async (doctype: string, oldName: string, newName: string) => {
+  const response = await authFetch('/api/erp/rename', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ doctype, old_name: oldName, new_name: newName }),
+  });
+  return handleMutationResponse(response, 'Erreur lors du renommage');
 };
 
 // ============================================================================
@@ -649,20 +810,36 @@ export const importFromCSV = async <T extends Record<string, unknown>>(
         resolve({ success: 0, errors: ['Fichier CSV vide'] });
         return;
       }
-      const headers = headerLine.split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+
+      // Auto-detect separator: semicolon (;) or comma (,)
+      const sep = headerLine.includes(';') ? ';' : ',';
+      const headers = headerLine.split(sep).map(h => (h || '').trim().replace(/^"|"$/g, ''));
       const results = { success: 0, errors: [] as string[] };
 
       for (let i = 1; i < lines.length; i++) {
         try {
           const currentLine = lines[i];
-          if (!currentLine) continue;
-          const values = currentLine.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          if (!currentLine || !currentLine.trim()) continue;
+          const values = currentLine.split(sep).map(v => (v || '').trim().replace(/^"|"$/g, ''));
           const record: Record<string, string> = {};
           headers.forEach((header, idx) => {
-            record[header] = values[idx] || '';
+            if (header) record[header] = values[idx] || '';
           });
+
+          // Skip rows where the first column (usually name) is empty
+          const firstVal = record[headers[0]];
+          if (!firstVal || !firstVal.trim()) {
+            results.errors.push(`Ligne ${i + 1}: Champ obligatoire "${headers[0]}" vide`);
+            continue;
+          }
+
           await createFn(record as T);
           results.success++;
+
+          // Throttle: 150ms delay between requests to avoid rate limiting
+          if (i < lines.length - 1) {
+            await new Promise(r => setTimeout(r, 150));
+          }
         } catch (err) {
           results.errors.push(`Ligne ${i + 1}: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
         }

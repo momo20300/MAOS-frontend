@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { getDashboardKPIs, DashboardKPIs } from "@/lib/services/api";
+import { getDashboardKPIs, DashboardKPIs, getMonthlyPerformance, MonthlyPerformanceData } from "@/lib/services/api";
 import { useAuth } from "@/lib/context/auth-context";
 import {
   DollarSign, FileText, Package, Users, TrendingUp,
@@ -26,7 +26,7 @@ import {
 } from "recharts";
 
 // Monthly chart data — empty until real data available from API
-const EMPTY_MONTHLY_DATA = [
+const EMPTY_MONTHLY_DATA: MonthlyPerformanceData[] = [
   "Jan", "Fev", "Mar", "Avr", "Mai", "Jun",
   "Jul", "Aou", "Sep", "Oct", "Nov", "Dec"
 ].map(month => ({ month, ventes: 0, achats: 0, marge: 0 }));
@@ -34,6 +34,7 @@ const EMPTY_MONTHLY_DATA = [
 export default function DashboardPage() {
   const { user } = useAuth();
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
+  const [monthlyData, setMonthlyData] = useState<MonthlyPerformanceData[]>(EMPTY_MONTHLY_DATA);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,8 +49,12 @@ export default function DashboardPage() {
     }
     setError(null);
     try {
-      const data = await getDashboardKPIs();
+      const [data, monthly] = await Promise.all([
+        getDashboardKPIs(),
+        getMonthlyPerformance(),
+      ]);
       setKpis(data);
+      setMonthlyData(monthly);
       setLastUpdate(new Date());
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur de connexion au serveur';
@@ -62,8 +67,12 @@ export default function DashboardPage() {
   // Silent background refresh
   const silentRefresh = async () => {
     try {
-      const data = await getDashboardKPIs();
+      const [data, monthly] = await Promise.all([
+        getDashboardKPIs(),
+        getMonthlyPerformance(),
+      ]);
       setKpis(data);
+      setMonthlyData(monthly);
       setLastUpdate(new Date());
     } catch {
       // Silent refresh failed
@@ -87,6 +96,9 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  // Check if chart has any data
+  const hasChartData = monthlyData.some(d => d.ventes > 0 || d.achats > 0);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -181,10 +193,10 @@ export default function DashboardPage() {
         <CardContent className="pb-2">
           <div className="h-[140px] w-full" style={{ minWidth: 0 }}>
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <LineChart data={EMPTY_MONTHLY_DATA} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <LineChart data={monthlyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v / 1000}k`} className="text-muted-foreground" />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} className="text-muted-foreground" />
                 <Tooltip
                   formatter={(value) => [`${Number(value).toLocaleString()} MAD`]}
                   contentStyle={{ fontSize: 12 }}
@@ -290,5 +302,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-

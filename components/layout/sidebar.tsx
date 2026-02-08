@@ -55,10 +55,10 @@ type UserRole = 'SUPERADMIN' | 'OWNER' | 'ADMIN' | 'MANAGER' | 'USER';
 // MANAGER: Opérationnel (CRM, Ventes, Achats, Stock, Projets, Support)
 // USER: Métier de base (CRM clients, Ventes commandes, Stock articles)
 const roleAccessMap: Record<UserRole, string[]> = {
-  SUPERADMIN: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'billing', 'superadmin', 'systeme'],
-  OWNER: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'billing', 'systeme'],
-  ADMIN: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'systeme'],
-  MANAGER: ['crm', 'ventes', 'achats', 'stock', 'projets', 'support'],
+  SUPERADMIN: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'rapports', 'billing', 'superadmin', 'systeme'],
+  OWNER: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'rapports', 'billing', 'systeme'],
+  ADMIN: ['crm', 'ventes', 'achats', 'stock', 'comptabilite', 'actifs', 'production', 'qualite', 'projets', 'support', 'rh', 'rapports', 'systeme'],
+  MANAGER: ['crm', 'ventes', 'achats', 'stock', 'projets', 'support', 'rapports'],
   USER: ['crm', 'ventes', 'stock'],
 };
 
@@ -174,6 +174,13 @@ const navigationSections = [
       { name: "Clients MAOS", href: "/superadmin/customers", icon: Building2 },
       { name: "Facturation", href: "/superadmin/billing", icon: Receipt },
       { name: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    id: "rapports",
+    title: "Rapports",
+    items: [
+      { name: "Rapports", href: "/reports", icon: FileBarChart },
     ],
   },
   {

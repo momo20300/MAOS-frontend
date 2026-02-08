@@ -143,6 +143,9 @@ export async function sendMessageStreamingSSE(
 
     const decoder = new TextDecoder();
     let buffer = '';
+    // IMPORTANT: eventType must persist across reader.read() calls
+    // because large payloads (audio base64) are split across chunks
+    let eventType = '';
 
     while (true) {
       const { done, value } = await reader.read();
@@ -150,27 +153,23 @@ export async function sendMessageStreamingSSE(
 
       buffer += decoder.decode(value, { stream: true });
 
-      // Parse SSE events
+      // Parse SSE events from complete lines
       const lines = buffer.split('\n');
       buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-      let eventType = '';
-      let eventData = '';
 
       for (const line of lines) {
         if (line.startsWith('event: ')) {
           eventType = line.slice(7).trim();
         } else if (line.startsWith('data: ')) {
-          eventData = line.slice(6);
+          const eventData = line.slice(6);
           if (eventType && eventData) {
             try {
               const data = JSON.parse(eventData);
               handleSSEEvent(eventType, data, callbacks);
             } catch {
-              // Skip malformed SSE data
+              // JSON parse failed — data line may be malformed, skip
             }
             eventType = '';
-            eventData = '';
           }
         }
       }
