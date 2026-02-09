@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
   const [monthlyData, setMonthlyData] = useState<MonthlyPerformanceData[]>(EMPTY_MONTHLY_DATA);
+  const [chartYear, setChartYear] = useState<number>(new Date().getFullYear());
   const [initialLoading, setInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,12 +50,13 @@ export default function DashboardPage() {
     }
     setError(null);
     try {
-      const [data, monthly] = await Promise.all([
+      const [data, monthlyResult] = await Promise.all([
         getDashboardKPIs(),
         getMonthlyPerformance(),
       ]);
       setKpis(data);
-      setMonthlyData(monthly);
+      setMonthlyData(monthlyResult.data);
+      setChartYear(monthlyResult.year);
       setLastUpdate(new Date());
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur de connexion au serveur';
@@ -67,12 +69,13 @@ export default function DashboardPage() {
   // Silent background refresh
   const silentRefresh = async () => {
     try {
-      const [data, monthly] = await Promise.all([
+      const [data, monthlyResult] = await Promise.all([
         getDashboardKPIs(),
         getMonthlyPerformance(),
       ]);
       setKpis(data);
-      setMonthlyData(monthly);
+      setMonthlyData(monthlyResult.data);
+      setChartYear(monthlyResult.year);
       setLastUpdate(new Date());
     } catch {
       // Silent refresh failed
@@ -187,7 +190,7 @@ export default function DashboardPage() {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <BarChart3 className="h-4 w-4" />
-            Performance {new Date().getFullYear()}
+            Performance {chartYear}
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-2">

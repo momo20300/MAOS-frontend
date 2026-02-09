@@ -114,7 +114,7 @@ export interface MonthlyPerformanceData {
   marge: number;
 }
 
-export async function getMonthlyPerformance(): Promise<MonthlyPerformanceData[]> {
+export async function getMonthlyPerformance(): Promise<{ data: MonthlyPerformanceData[]; year: number }> {
   const emptyData: MonthlyPerformanceData[] = [
     'Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun',
     'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -124,13 +124,13 @@ export async function getMonthlyPerformance(): Promise<MonthlyPerformanceData[]>
     const response = await authFetch('/api/dashboard/monthly-performance');
     if (!response.ok) {
       console.debug('Monthly performance endpoint not available');
-      return emptyData;
+      return { data: emptyData, year: new Date().getFullYear() };
     }
-    const data = await response.json();
-    return data.data || emptyData;
+    const result = await response.json();
+    return { data: result.data || emptyData, year: result.year || new Date().getFullYear() };
   } catch (error) {
     console.debug('Monthly performance not available:', error);
-    return emptyData;
+    return { data: emptyData, year: new Date().getFullYear() };
   }
 }
 
