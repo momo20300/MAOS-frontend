@@ -27,6 +27,7 @@ export default function MaosTalk() {
   const [useStreaming, setUseStreaming] = useState(true); // Enable streaming by default for faster responses
   const [streamingText, setStreamingText] = useState(""); // Current streaming text
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
+  const [sessionId] = useState(() => `maos-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
   const audioQueueRef = useRef<{ audio: HTMLAudioElement; index: number }[]>([]);
   const currentAudioIndexRef = useRef(-1);
   const expectedAudioCountRef = useRef(0); // Track how many sentences we expect
@@ -676,7 +677,7 @@ export default function MaosTalk() {
     };
 
     try {
-      await sendMessageStreamingSSE(textToSend.trim(), callbacks, { wantAudio: ttsEnabled });
+      await sendMessageStreamingSSE(textToSend.trim(), callbacks, { wantAudio: ttsEnabled, sessionId });
     } catch {
       setIsLoading(false);
     }
@@ -856,7 +857,7 @@ export default function MaosTalk() {
       {/* MODE MINIMISÉ - Juste un bouton flottant */}
       {isMinimized && (
         <button
-          onClick={() => setIsMinimized(false)}
+          onClick={() => { setIsMinimized(false); resetActivityTimer(); }}
           className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center shadow-2xl z-50 hover:scale-110 transition-transform"
           title="Ouvrir MAOS Chat"
         >

@@ -82,7 +82,7 @@ export function StatsDialog({ open, onOpenChange }: Props) {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-2xl font-bold">{totalDocs.toLocaleString("fr-FR")}</div>
-              <div className="text-sm text-muted-foreground">Documents total dans ERPNext</div>
+              <div className="text-sm text-muted-foreground">Documents total dans le systeme</div>
             </div>
             <Button variant="outline" size="sm" onClick={fetchStats} disabled={loading} className="rounded-xl">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}

@@ -110,7 +110,7 @@ export interface StreamingCallbacks {
 export async function sendMessageStreamingSSE(
   message: string,
   callbacks: StreamingCallbacks,
-  options?: { wantAudio?: boolean }
+  options?: { wantAudio?: boolean; sessionId?: string }
 ): Promise<void> {
   const token = localStorage.getItem('maos_access_token');
   if (!token) {
@@ -129,6 +129,7 @@ export async function sendMessageStreamingSSE(
       body: JSON.stringify({
         message,
         wantAudio: options?.wantAudio ?? true,
+        sessionId: options?.sessionId,
       }),
     });
 
@@ -167,7 +168,29 @@ export async function sendMessageStreamingSSE(
               const data = JSON.parse(eventData);
               handleSSEEvent(eventType, data, callbacks);
             } catch {
-              // JSON parse failed — data line may be malformed, skip
+              // JSON parse failed — partial data, keep eventType for next chunk
+              continue;
+            }
+            eventType = '';
+          }
+        }
+      }
+    }
+
+    // Flush remaining buffer after stream ends (handles fast responses like greetings)
+    if (buffer.trim()) {
+      const remainingLines = buffer.split('\n');
+      for (const line of remainingLines) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice(7).trim();
+        } else if (line.startsWith('data: ')) {
+          const eventData = line.slice(6);
+          if (eventType && eventData) {
+            try {
+              const data = JSON.parse(eventData);
+              handleSSEEvent(eventType, data, callbacks);
+            } catch {
+              // ignore
             }
             eventType = '';
           }

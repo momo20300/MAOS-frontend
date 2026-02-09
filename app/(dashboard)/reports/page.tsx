@@ -106,7 +106,7 @@ export default function ReportsPage() {
       window.open(url, "_blank");
     } catch (e) {
       console.error("Report generation failed:", e);
-      alert("Erreur lors de la generation du rapport. Verifiez la connexion ERPNext.");
+      alert("Erreur lors de la generation du rapport. Verifiez la connexion au systeme.");
     } finally {
       setGenerating(null);
     }

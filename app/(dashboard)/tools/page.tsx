@@ -34,7 +34,7 @@ export default function ToolsPage() {
     },
     {
       name: "Renommer Documents",
-      description: "Renommez vos documents ERPNext",
+      description: "Renommez vos documents du systeme",
       icon: RefreshCw,
       action: () => setRenameOpen(true),
     },
@@ -52,7 +52,7 @@ export default function ToolsPage() {
     },
     {
       name: "Console Base de Donnees",
-      description: "Statistiques et compteurs ERPNext",
+      description: "Statistiques et compteurs du systeme",
       icon: Database,
       action: () => setStatsOpen(true),
     },
@@ -63,7 +63,7 @@ export default function ToolsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Outils</h2>
-          <p className="text-muted-foreground">Outils utilitaires du systeme connectes a ERPNext</p>
+          <p className="text-muted-foreground">Outils utilitaires du systeme de gestion</p>
         </div>
       </div>
 
