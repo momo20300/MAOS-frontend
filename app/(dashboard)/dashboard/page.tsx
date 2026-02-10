@@ -124,10 +124,10 @@ export default function DashboardPage() {
               {kpis?.revenue?.toLocaleString() || 0} MAD
             </div>
             <div className="flex items-center justify-between mt-1">
-              <p className="text-[10px] text-muted-foreground">Total des ventes</p>
+              <p className="text-[10px] text-muted-foreground">12 derniers mois</p>
               <div className="flex items-center gap-0.5">
                 <TrendingUp className="h-2.5 w-2.5 text-success-400" />
-                <span className="text-[10px] text-success-400 font-medium">ce mois</span>
+                <span className="text-[10px] text-success-400 font-medium">cumul</span>
               </div>
             </div>
           </CardContent>
