@@ -148,6 +148,8 @@ type SortOption = "revenue_desc" | "margin_desc" | "name_asc" | "qty_desc";
 
 export default function ProductAnalysisPage() {
   const [products, setProducts] = useState<ProductSummary[]>([]);
+  const [globalCA, setGlobalCA] = useState(0);
+  const [globalPurchases, setGlobalPurchases] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<ProductAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -175,6 +177,8 @@ export default function ProductAnalysisPage() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Erreur inconnue");
       setProducts(json.data || []);
+      setGlobalCA(json.globalCA || 0);
+      setGlobalPurchases(json.globalPurchases || 0);
     } catch (e: any) {
       setError(e.message || "Erreur de chargement");
     } finally {
@@ -245,7 +249,7 @@ export default function ProductAnalysisPage() {
   };
 
   // ── Filter + Sort + Paginate (Bug 8) ──
-  const uniqueGroups = [...new Set(products.map((p) => p.itemGroup).filter(Boolean))].sort();
+  const uniqueGroups = [...new Set(products.map((p) => p.itemGroup).filter((g) => g && g !== "All Item Groups"))].sort();
   const uniqueSuppliers = [...new Set(products.map((p) => p.supplier).filter(Boolean))].sort();
 
   let filtered = products.filter((p) => {
@@ -280,9 +284,11 @@ export default function ProductAnalysisPage() {
   useEffect(() => { setCurrentPage(1); }, [search, groupFilter, supplierFilter, sortBy]);
 
   // ── Aggregates ──
-  const totalCA = products.reduce((s, p) => s + p.revenue, 0);
+  // Use globalCA from SINV headers (matches exploitation report), fallback to item sum
+  const itemTotalCA = products.reduce((s, p) => s + p.revenue, 0);
+  const totalCA = globalCA > 0 ? globalCA : itemTotalCA;
   const totalCost = products.reduce((s, p) => s + p.cost, 0);
-  const avgMargin = totalCA > 0 ? ((totalCA - totalCost) / totalCA) * 100 : 0;
+  const globalMargin = totalCA > 0 ? ((totalCA - globalPurchases) / totalCA) * 100 : 0;
 
   // ── Group chart data ──
   const groupData = products.reduce((acc: Record<string, number>, p) => {
@@ -290,10 +296,15 @@ export default function ProductAnalysisPage() {
     acc[g] = (acc[g] || 0) + p.revenue;
     return acc;
   }, {});
-  const pieData = Object.entries(groupData)
+  // Filter out "All Item Groups" as it's a useless default
+  const meaningfulGroups = Object.entries(groupData).filter(
+    ([name]) => name !== "All Item Groups"
+  );
+  const pieData = meaningfulGroups
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
     .map(([name, value]) => ({ name, value }));
+  const hasUsefulGroups = pieData.length > 1;
 
   // ═══════════════════════════════════════════════════════════
   // DETAIL VIEW
@@ -789,29 +800,29 @@ export default function ProductAnalysisPage() {
             <KPICard
               title="CA Total"
               value={fmtMAD(totalCA)}
-              subtitle={`Cout total: ${fmtMAD(totalCost)}`}
+              subtitle={`Achats: ${fmtMAD(globalPurchases || totalCost)}`}
               icon={<DollarSign className="h-5 w-5" />}
               color="emerald"
             />
             <KPICard
-              title="Marge Moyenne"
-              value={fmtPct(avgMargin)}
-              icon={avgMargin > 15 ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
-              color={avgMargin > 15 ? "emerald" : "amber"}
-              trend={fmtPct(avgMargin)}
-              trendUp={avgMargin > 15}
+              title="Marge Globale"
+              value={fmtPct(globalMargin)}
+              icon={globalMargin > 15 ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+              color={globalMargin > 15 ? "emerald" : "amber"}
+              trend={fmtPct(globalMargin)}
+              trendUp={globalMargin > 15}
             />
             <KPICard
-              title="Groupes"
-              value={String(Object.keys(groupData).length)}
-              subtitle={`${uniqueSuppliers.length} fournisseurs`}
+              title={hasUsefulGroups ? "Groupes" : "Fournisseurs"}
+              value={hasUsefulGroups ? String(meaningfulGroups.length) : String(uniqueSuppliers.length)}
+              subtitle={hasUsefulGroups ? `${uniqueSuppliers.length} fournisseurs` : `${products.length} produits`}
               icon={<BarChart3 className="h-5 w-5" />}
               color="purple"
             />
           </div>
 
-          {/* Pie Chart */}
-          {pieData.length > 0 && pieData.length > 1 && (
+          {/* Pie Chart — hidden when no useful groups */}
+          {hasUsefulGroups && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">CA par groupe de produits</CardTitle>
