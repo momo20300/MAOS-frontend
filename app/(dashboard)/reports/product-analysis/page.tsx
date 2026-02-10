@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import {
   Package, DollarSign, ShoppingCart, Truck, Download, Search,
   Loader2, RefreshCw, AlertTriangle, CheckCircle, ExternalLink,
   ArrowUpRight, ArrowDownRight, TrendingUp, Users, Globe,
-  BarChart3,
+  BarChart3, X, ChevronLeft, ChevronRight, Filter,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -133,7 +133,16 @@ function fmtPct(n: number): string {
   return n.toFixed(1) + "%";
 }
 
+function fmtMargin(p: ProductSummary): string {
+  // Bug 5: if cost is 0 and marginPercent is 0, show N/D
+  if (p.cost === 0 && p.qtyPurchased === 0) return "N/D";
+  return fmtPct(p.marginPercent);
+}
+
 const CHART_COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
+const PAGE_SIZE = 20;
+
+type SortOption = "revenue_desc" | "margin_desc" | "name_asc" | "qty_desc";
 
 // ── Page Component ────────────────────────────────────────
 
@@ -146,6 +155,15 @@ export default function ProductAnalysisPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"catalogue" | "detail">("catalogue");
+
+  // Bug 1: AbortController for cancellable detail fetch
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Bug 8: Pagination + filters
+  const [currentPage, setCurrentPage] = useState(1);
+  const [groupFilter, setGroupFilter] = useState("all");
+  const [supplierFilter, setSupplierFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<SortOption>("revenue_desc");
 
   // ── Fetch all products ──
   const fetchProducts = useCallback(async () => {
@@ -164,22 +182,42 @@ export default function ProductAnalysisPage() {
     }
   }, []);
 
-  // ── Fetch single product detail ──
+  // Bug 1: Fetch single product detail with AbortController
   const fetchProductDetail = useCallback(async (itemCode: string) => {
+    // Abort any previous request
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setDetailLoading(true);
     setError(null);
     try {
-      const res = await authFetch(`/api/reports/product-analysis?itemCode=${encodeURIComponent(itemCode)}`);
+      const res = await authFetch(
+        `/api/reports/product-analysis?itemCode=${encodeURIComponent(itemCode)}`,
+        { signal: controller.signal },
+      );
       if (!res.ok) throw new Error(`Erreur ${res.status}`);
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Erreur inconnue");
       setSelectedProduct(json.data);
       setView("detail");
     } catch (e: any) {
+      if (e.name === "AbortError") {
+        // User cancelled — stay on catalogue
+        return;
+      }
       setError(e.message || "Erreur de chargement");
     } finally {
       setDetailLoading(false);
+      abortRef.current = null;
     }
+  }, []);
+
+  // Bug 1: Cancel handler
+  const cancelAnalysis = useCallback(() => {
+    if (abortRef.current) abortRef.current.abort();
+    setDetailLoading(false);
+    abortRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -206,16 +244,40 @@ export default function ProductAnalysisPage() {
     }
   };
 
-  // ── Filter ──
-  const filtered = products.filter((p) => {
+  // ── Filter + Sort + Paginate (Bug 8) ──
+  const uniqueGroups = [...new Set(products.map((p) => p.itemGroup).filter(Boolean))].sort();
+  const uniqueSuppliers = [...new Set(products.map((p) => p.supplier).filter(Boolean))].sort();
+
+  let filtered = products.filter((p) => {
     const q = search.toLowerCase();
-    return (
+    const matchSearch =
+      !q ||
       p.itemCode.toLowerCase().includes(q) ||
       p.itemName.toLowerCase().includes(q) ||
       (p.supplier || "").toLowerCase().includes(q) ||
-      (p.itemGroup || "").toLowerCase().includes(q)
-    );
+      (p.itemGroup || "").toLowerCase().includes(q);
+    const matchGroup = groupFilter === "all" || p.itemGroup === groupFilter;
+    const matchSupplier = supplierFilter === "all" || p.supplier === supplierFilter;
+    return matchSearch && matchGroup && matchSupplier;
   });
+
+  // Sort
+  filtered = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case "revenue_desc": return b.revenue - a.revenue;
+      case "margin_desc": return b.marginPercent - a.marginPercent;
+      case "name_asc": return a.itemName.localeCompare(b.itemName);
+      case "qty_desc": return b.qtySold - a.qtySold;
+      default: return 0;
+    }
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [search, groupFilter, supplierFilter, sortBy]);
 
   // ── Aggregates ──
   const totalCA = products.reduce((s, p) => s + p.revenue, 0);
@@ -224,7 +286,7 @@ export default function ProductAnalysisPage() {
 
   // ── Group chart data ──
   const groupData = products.reduce((acc: Record<string, number>, p) => {
-    const g = p.itemGroup || "Autre";
+    const g = p.itemGroup || "Non classe";
     acc[g] = (acc[g] || 0) + p.revenue;
     return acc;
   }, {});
@@ -239,6 +301,7 @@ export default function ProductAnalysisPage() {
 
   if (view === "detail" && selectedProduct) {
     const p = selectedProduct;
+    const hasNoCost = p.avgPurchasePrice === 0 && p.totalQtyPurchased === 0;
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Header */}
@@ -252,7 +315,7 @@ export default function ProductAnalysisPage() {
               {p.itemCode} — {p.itemName}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Groupe: {p.itemGroup} | Fournisseur: {p.supplier || "-"}
+              Groupe: {p.itemGroup || "Non classe"} | Fournisseur: {p.supplier || "-"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -286,12 +349,12 @@ export default function ProductAnalysisPage() {
           />
           <KPICard
             title="Marge Brute"
-            value={fmtMAD(p.grossMargin)}
-            subtitle={`Taux: ${fmtPct(p.grossMarginPercent)}`}
-            icon={p.grossMarginPercent > 15 ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
-            color={p.grossMarginPercent > 15 ? "emerald" : "amber"}
-            trend={fmtPct(p.grossMarginPercent)}
-            trendUp={p.grossMarginPercent > 15}
+            value={hasNoCost ? "N/D" : fmtMAD(p.grossMargin)}
+            subtitle={hasNoCost ? "Cout d'achat non renseigne" : `Taux: ${fmtPct(p.grossMarginPercent)}`}
+            icon={hasNoCost ? <AlertTriangle className="h-5 w-5" /> : p.grossMarginPercent > 15 ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+            color={hasNoCost ? "amber" : p.grossMarginPercent > 15 ? "emerald" : "amber"}
+            trend={hasNoCost ? undefined : fmtPct(p.grossMarginPercent)}
+            trendUp={hasNoCost ? undefined : p.grossMarginPercent > 15}
           />
           <KPICard
             title="Livraisons"
@@ -399,7 +462,7 @@ export default function ProductAnalysisPage() {
           </Card>
         )}
 
-        {/* ═══ WEB DATA ═══ */}
+        {/* WEB DATA */}
         {p.webData && (
           <>
             {/* Price Alerts */}
@@ -623,13 +686,15 @@ export default function ProductAnalysisPage() {
                 <p className="text-xl font-bold text-emerald-600">{fmtMAD(p.totalRevenue)}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Cout achat total</p>
-                <p className="text-xl font-bold text-blue-600">{fmtMAD(p.totalPurchaseCost)}</p>
+                <p className="text-sm text-muted-foreground">COGS (cout des ventes)</p>
+                <p className="text-xl font-bold text-blue-600">
+                  {hasNoCost ? "N/D" : fmtMAD(p.totalQtySold * p.avgPurchasePrice)}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Marge brute</p>
-                <p className={cn("text-xl font-bold", p.grossMarginPercent > 15 ? "text-emerald-600" : "text-amber-600")}>
-                  {fmtMAD(p.grossMargin)} ({fmtPct(p.grossMarginPercent)})
+                <p className={cn("text-xl font-bold", hasNoCost ? "text-gray-400" : p.grossMarginPercent > 15 ? "text-emerald-600" : "text-amber-600")}>
+                  {hasNoCost ? "N/D" : `${fmtMAD(p.grossMargin)} (${fmtPct(p.grossMarginPercent)})`}
                 </p>
               </div>
             </div>
@@ -678,20 +743,23 @@ export default function ProductAnalysisPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher par code, nom, fournisseur, groupe..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Bug 1: Loading overlay with cancel button */}
+      {detailLoading && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <Card className="p-6 max-w-md">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                <span className="text-sm">Analyse en cours (donnees internes + veille prix web)...</span>
+              </div>
+              <Button variant="destructive" size="sm" onClick={cancelAnalysis} className="gap-1">
+                <X className="h-4 w-4" />
+                Annuler
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Loading / Error */}
       {loading && (
@@ -707,20 +775,9 @@ export default function ProductAnalysisPage() {
         </Card>
       )}
 
-      {detailLoading && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-              <span>Analyse en cours (donnees internes + veille prix web)...</span>
-            </div>
-          </Card>
-        </div>
-      )}
-
       {!loading && products.length > 0 && (
         <>
-          {/* KPI Cards */}
+          {/* Bug 9: KPI Cards with min-height */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <KPICard
               title="Produits actifs"
@@ -732,6 +789,7 @@ export default function ProductAnalysisPage() {
             <KPICard
               title="CA Total"
               value={fmtMAD(totalCA)}
+              subtitle={`Cout total: ${fmtMAD(totalCost)}`}
               icon={<DollarSign className="h-5 w-5" />}
               color="emerald"
             />
@@ -746,13 +804,14 @@ export default function ProductAnalysisPage() {
             <KPICard
               title="Groupes"
               value={String(Object.keys(groupData).length)}
+              subtitle={`${uniqueSuppliers.length} fournisseurs`}
               icon={<BarChart3 className="h-5 w-5" />}
               color="purple"
             />
           </div>
 
           {/* Pie Chart */}
-          {pieData.length > 0 && (
+          {pieData.length > 0 && pieData.length > 1 && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">CA par groupe de produits</CardTitle>
@@ -779,11 +838,62 @@ export default function ProductAnalysisPage() {
             </Card>
           )}
 
+          {/* Bug 8: Search + Filters bar */}
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par code, nom, fournisseur, groupe..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Filtres:</span>
+                </div>
+                <select
+                  value={groupFilter}
+                  onChange={(e) => setGroupFilter(e.target.value)}
+                  className="text-sm border rounded-md px-2 py-1.5 bg-background"
+                >
+                  <option value="all">Tous les groupes</option>
+                  {uniqueGroups.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+                <select
+                  value={supplierFilter}
+                  onChange={(e) => setSupplierFilter(e.target.value)}
+                  className="text-sm border rounded-md px-2 py-1.5 bg-background"
+                >
+                  <option value="all">Tous les fournisseurs</option>
+                  {uniqueSuppliers.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="text-sm border rounded-md px-2 py-1.5 bg-background"
+                >
+                  <option value="revenue_desc">Trier: CA desc</option>
+                  <option value="margin_desc">Trier: Marge desc</option>
+                  <option value="name_asc">Trier: Nom A-Z</option>
+                  <option value="qty_desc">Trier: Qty desc</option>
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Products Table */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">
-                Classement des produits par CA ({filtered.length})
+                Classement des produits ({filtered.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -794,57 +904,101 @@ export default function ProductAnalysisPage() {
                       <th className="py-2 px-2 w-8">#</th>
                       <th className="py-2 px-2">Code</th>
                       <th className="py-2 px-2">Nom</th>
+                      <th className="py-2 px-2">Groupe</th>
                       <th className="py-2 px-2">Fournisseur</th>
                       <th className="py-2 px-2 text-right">CA</th>
-                      <th className="py-2 px-2 text-right">Cout</th>
+                      <th className="py-2 px-2 text-right">COGS</th>
                       <th className="py-2 px-2 text-right">Marge</th>
                       <th className="py-2 px-2 text-right">Qty</th>
                       <th className="py-2 px-2 w-20"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.slice(0, 100).map((p, i) => (
-                      <tr
-                        key={p.itemCode}
-                        className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
-                        onClick={() => fetchProductDetail(p.itemCode)}
-                      >
-                        <td className="py-2 px-2 text-muted-foreground">{i + 1}</td>
-                        <td className="py-2 px-2 font-mono text-xs">{p.itemCode}</td>
-                        <td className="py-2 px-2 font-medium truncate max-w-[200px]" title={p.itemName}>
-                          {p.itemName}
-                        </td>
-                        <td className="py-2 px-2 truncate max-w-[120px] text-muted-foreground">
-                          {p.supplier || "-"}
-                        </td>
-                        <td className="py-2 px-2 text-right font-semibold text-emerald-600 dark:text-emerald-400">
-                          {fmtMAD(p.revenue)}
-                        </td>
-                        <td className="py-2 px-2 text-right text-blue-600 dark:text-blue-400">
-                          {fmtMAD(p.cost)}
-                        </td>
-                        <td className="py-2 px-2 text-right">
-                          <Badge
-                            variant={p.marginPercent > 15 ? "default" : p.marginPercent > 0 ? "secondary" : "destructive"}
-                            className="text-xs"
-                          >
-                            {fmtPct(p.marginPercent)}
-                          </Badge>
-                        </td>
-                        <td className="py-2 px-2 text-right text-muted-foreground">{p.qtySold}</td>
-                        <td className="py-2 px-2">
-                          <Button variant="ghost" size="sm" className="text-blue-500 hover:text-blue-700 text-xs">
-                            Analyser &rarr;
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {pageItems.map((p, i) => {
+                      const noCost = p.cost === 0 && p.qtyPurchased === 0;
+                      return (
+                        <tr
+                          key={p.itemCode}
+                          className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
+                          onClick={() => fetchProductDetail(p.itemCode)}
+                        >
+                          <td className="py-2 px-2 text-muted-foreground">{(safePage - 1) * PAGE_SIZE + i + 1}</td>
+                          <td className="py-2 px-2 font-mono text-xs">{p.itemCode}</td>
+                          <td className="py-2 px-2 font-medium truncate max-w-[200px]" title={p.itemName}>
+                            {p.itemName}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-muted-foreground truncate max-w-[100px]">
+                            {p.itemGroup}
+                          </td>
+                          <td className="py-2 px-2 truncate max-w-[120px] text-muted-foreground">
+                            {p.supplier || "-"}
+                          </td>
+                          <td className="py-2 px-2 text-right font-semibold text-emerald-600 dark:text-emerald-400">
+                            {fmtMAD(p.revenue)}
+                          </td>
+                          <td className="py-2 px-2 text-right text-blue-600 dark:text-blue-400">
+                            {noCost ? "-" : fmtMAD(p.cost)}
+                          </td>
+                          <td className="py-2 px-2 text-right">
+                            {noCost ? (
+                              <Badge variant="outline" className="text-xs text-gray-400" title="Cout d'achat non renseigne">
+                                N/D
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant={p.marginPercent > 15 ? "default" : p.marginPercent > 0 ? "secondary" : "destructive"}
+                                className="text-xs"
+                              >
+                                {fmtPct(p.marginPercent)}
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-2 px-2 text-right text-muted-foreground">{p.qtySold}</td>
+                          <td className="py-2 px-2">
+                            <Button variant="ghost" size="sm" className="text-blue-500 hover:text-blue-700 text-xs">
+                              Analyser &rarr;
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
+
               {filtered.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   Aucun produit ne correspond a votre recherche
+                </div>
+              )}
+
+              {/* Bug 8: Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <span className="text-sm text-muted-foreground">
+                    {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} sur {filtered.length}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={safePage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium">
+                      Page {safePage} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={safePage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -855,7 +1009,7 @@ export default function ProductAnalysisPage() {
   );
 }
 
-// ── KPI Card Component ────────────────────────────────────
+// ── KPI Card Component (Bug 9: min-height) ───────────────
 
 function KPICard({
   title,
@@ -882,8 +1036,8 @@ function KPICard({
   };
 
   return (
-    <Card>
-      <CardContent className="p-4">
+    <Card className="min-h-[120px]">
+      <CardContent className="p-4 h-full flex flex-col justify-between">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-muted-foreground">{title}</span>
           <div className={cn("p-2 rounded-lg", colorMap[color])}>
