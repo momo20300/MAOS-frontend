@@ -180,7 +180,8 @@ const navigationSections = [
     id: "rapports",
     title: "Rapports",
     items: [
-      { name: "Rapports", href: "/reports", icon: FileBarChart },
+      { name: "Rapport d'Exploitation", href: "/reports/exploitation", icon: TrendingUp },
+      { name: "Tous les Rapports", href: "/reports", icon: FileBarChart },
     ],
   },
   {
