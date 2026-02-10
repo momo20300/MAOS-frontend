@@ -39,7 +39,7 @@ export default function DashboardPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   // Initial load
   const fetchKPIs = useCallback(async (isInitial = false) => {
