@@ -181,6 +181,7 @@ const navigationSections = [
     title: "Rapports",
     items: [
       { name: "Rapport d'Exploitation", href: "/reports/exploitation", icon: TrendingUp },
+      { name: "Analyse Produit", href: "/reports/product-analysis", icon: Package },
       { name: "Tous les Rapports", href: "/reports", icon: FileBarChart },
     ],
   },
