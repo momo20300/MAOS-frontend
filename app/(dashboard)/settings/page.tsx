@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/context/auth-context";
-import { Settings, User, Bell, Shield, Database, LogOut, Building, Loader2, Bot, Users, Briefcase, Package, UserCog, FileText, Target } from "lucide-react";
+import { Settings, User, Bell, Shield, Database, LogOut, Building, Loader2, Bot, Users, Briefcase, Package, UserCog, FileText, Target, ImageIcon, Upload, CheckCircle } from "lucide-react";
+import { authFetch } from "@/lib/services/auth";
 
 interface AgentStats {
   totalAgents: number;
@@ -22,6 +23,55 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [agentStats, setAgentStats] = useState<AgentStats | null>(null);
   const [loadingAgents, setLoadingAgents] = useState(true);
+  const [logoExists, setLogoExists] = useState(false);
+  const [logoSize, setLogoSize] = useState(0);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoMessage, setLogoMessage] = useState("");
+
+  useEffect(() => {
+    const fetchLogoInfo = async () => {
+      try {
+        const res = await authFetch("/api/reports/company-logo");
+        if (res.ok) {
+          const data = await res.json();
+          setLogoExists(data.exists);
+          setLogoSize(data.size || 0);
+        }
+      } catch { /* ignore */ }
+    };
+    fetchLogoInfo();
+  }, []);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoMessage("Fichier trop volumineux (max 2 MB)");
+      return;
+    }
+    setLogoUploading(true);
+    setLogoMessage("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await authFetch("/api/reports/company-logo", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLogoExists(true);
+        setLogoSize(data.size || file.size);
+        setLogoMessage("Logo enregistre avec succes");
+      } else {
+        setLogoMessage(data.error || "Erreur lors de l'upload");
+      }
+    } catch {
+      setLogoMessage("Erreur reseau");
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchAgentStats = async () => {
@@ -176,6 +226,71 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Logo Management */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              <CardTitle>Logo Societe</CardTitle>
+            </div>
+            <CardDescription>
+              Logo affiche dans les en-tetes des rapports PDF
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">
+                  {logoExists ? "Logo configure" : "Aucun logo"}
+                </div>
+                {logoExists && (
+                  <div className="text-sm text-muted-foreground">
+                    {Math.round(logoSize / 1024)} KB
+                  </div>
+                )}
+              </div>
+              {logoExists ? (
+                <Badge variant="default" className="bg-green-600">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Actif
+                </Badge>
+              ) : (
+                <Badge variant="outline">Non configure</Badge>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="logo-upload" className="cursor-pointer">
+                <div className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-muted/50 transition-colors w-fit">
+                  {logoUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  <span className="text-sm">
+                    {logoExists ? "Remplacer le logo" : "Telecharger un logo"}
+                  </span>
+                </div>
+              </Label>
+              <input
+                id="logo-upload"
+                type="file"
+                accept="image/png,image/jpeg"
+                className="hidden"
+                onChange={handleLogoUpload}
+                disabled={logoUploading}
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                PNG ou JPG, max 2 MB
+              </p>
+              {logoMessage && (
+                <p className={`text-sm mt-2 ${logoMessage.includes("succes") ? "text-green-600" : "text-red-500"}`}>
+                  {logoMessage}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
