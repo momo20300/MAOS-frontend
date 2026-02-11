@@ -248,19 +248,20 @@ export default function DashboardPage() {
         <CardContent className="pb-2">
           <div className="h-[150px] w-full" style={{ minWidth: 0 }}>
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <LineChart data={monthly} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <LineChart data={monthly} margin={{ top: 5, right: 45, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} className="text-muted-foreground" />
+                <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} className="text-muted-foreground" />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} stroke="#f59e0b" />
                 <Tooltip
                   formatter={(value) => [`${Number(value).toLocaleString()} MAD`]}
                   contentStyle={{ fontSize: 12 }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="ventes" name="Ventes" stroke="#6bbc8e" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="achats" name="Achats" stroke="#c3758c" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="marge" name="Marge" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="stock" name="Stock" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+                <Line yAxisId="left" type="monotone" dataKey="ventes" name="Ventes" stroke="#6bbc8e" strokeWidth={2} dot={false} />
+                <Line yAxisId="left" type="monotone" dataKey="achats" name="Achats" stroke="#c3758c" strokeWidth={2} dot={false} />
+                <Line yAxisId="left" type="monotone" dataKey="marge" name="Marge" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                <Line yAxisId="right" type="monotone" dataKey="stock" name="Stock" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="5 5" />
               </LineChart>
             </ResponsiveContainer>
           </div>
