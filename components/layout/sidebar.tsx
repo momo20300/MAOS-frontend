@@ -129,6 +129,7 @@ const navigationSections = [
     id: "production",
     title: "Production",
     items: [
+      { name: "Dashboard Prod", href: "/manufacturing", icon: BarChart3 },
       { name: "Ordres Fabrication", href: "/work-orders", icon: Factory },
       { name: "Nomenclatures", href: "/bom", icon: ClipboardList },
     ],
@@ -145,6 +146,7 @@ const navigationSections = [
     id: "projets",
     title: "Projets",
     items: [
+      { name: "Dashboard Projets", href: "/projects-dashboard", icon: BarChart3 },
       { name: "Projets", href: "/projects", icon: FolderKanban },
       { name: "Tâches", href: "/tasks", icon: ClipboardList },
     ],

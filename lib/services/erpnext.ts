@@ -298,6 +298,87 @@ export const getHrDashboard = async (): Promise<HrDashboardData | null> => {
   }
 };
 
+export interface ManufacturingDashboardData {
+  kpis: {
+    totalWorkOrders: number;
+    openWO: number;
+    completedWO: number;
+    totalBOMs: number;
+    activeBOMs: number;
+    totalProduced: number;
+    totalPlanned: number;
+    completionRate: number;
+    stockEntryCount: number;
+  };
+  woStatusDistribution: Array<{ status: string; count: number }>;
+  stockEntryTypes: Array<{ name: string; count: number }>;
+  monthlyProduction: Array<{ month: string; planned: number; produced: number }>;
+  topItems: Array<{ code: string; name: string; planned: number; produced: number }>;
+  recentWOs: Array<{
+    name: string;
+    item_name: string;
+    qty: number;
+    produced_qty: number;
+    status: string;
+    planned_start_date: string;
+  }>;
+}
+
+export const getManufacturingDashboard = async (): Promise<ManufacturingDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/manufacturing/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch Manufacturing dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Manufacturing dashboard error:', error);
+    return null;
+  }
+};
+
+export interface ProjectsDashboardData {
+  kpis: {
+    totalProjects: number;
+    openProjects: number;
+    completedProjects: number;
+    overdueProjects: number;
+    totalTasks: number;
+    openTasks: number;
+    completedTasks: number;
+    workingTasks: number;
+    avgCompletion: number;
+    totalEstimated: number;
+    totalActual: number;
+  };
+  projectStatusDistribution: Array<{ status: string; count: number }>;
+  taskStatusDistribution: Array<{ status: string; count: number }>;
+  priorityDistribution: Array<{ name: string; count: number }>;
+  projectTypes: Array<{ name: string; count: number }>;
+  topProjectsByTasks: Array<{ name: string; total: number; completed: number }>;
+  projectList: Array<{
+    name: string;
+    project_name: string;
+    status: string;
+    percent_complete: number;
+    priority: string;
+    expected_end_date: string;
+  }>;
+}
+
+export const getProjectsDashboard = async (): Promise<ProjectsDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/projects/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch Projects dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Projects dashboard error:', error);
+    return null;
+  }
+};
+
 // ============================================================================
 // Dashboard KPIs
 // ============================================================================
