@@ -612,6 +612,39 @@ export const getSuperAdminDashboard = async (): Promise<SuperAdminDashboardData 
 };
 
 // ============================================================================
+// Home Dashboard (Unified Global View)
+// ============================================================================
+
+export interface HomeDashboardData {
+  finance: { revenue: number; expenses: number; profit: number; margin: number; receivableCount: number; payableCount: number };
+  sales: { invoiceCount: number; unpaidCount: number; unpaidAmount: number; thisMonthCA: number; topProducts: Array<{ name: string; qty: number; revenue: number }> };
+  purchases: { poCount: number; totalAmount: number; supplierCount: number };
+  stock: { totalItems: number; criticalCount: number; lowStockCount: number; stockValue: number };
+  hr: { totalEmployees: number; activeEmployees: number };
+  manufacturing: { totalWO: number; openWO: number; completedWO: number; completionRate: number };
+  projects: { totalProjects: number; openProjects: number; completedProjects: number; avgCompletion: number };
+  crm: { totalCustomers: number; activeLeads: number };
+  quality: { totalInspections: number; acceptanceRate: number };
+  support: { totalIssues: number; openIssues: number; resolutionRate: number };
+  monthly: Array<{ month: string; ventes: number; achats: number; marge: number }>;
+  year: number;
+  alerts: Array<{ type: string; priority: string; title: string; detail: string; module: string; link: string }>;
+}
+
+export const getHomeDashboard = async (): Promise<HomeDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/dashboard/home');
+    if (!response.ok) throw new Error('Failed to fetch home dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Home dashboard error:', error);
+    return null;
+  }
+};
+
+// ============================================================================
 // Dashboard KPIs
 // ============================================================================
 
