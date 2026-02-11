@@ -595,8 +595,21 @@ export default function ProductAnalysisPage() {
           </Card>
         )}
 
+        {/* NOT FOUND notice for physical products with no web data */}
+        {!p.isService && (!p.webData || (p.webData.webPrices.length === 0 && p.webData.alternatives.length === 0 && p.webData.distributors.length === 0)) && (
+          <Card className="border-l-4 border-l-blue-500 bg-blue-50 dark:bg-blue-900/10">
+            <CardContent className="p-4 flex items-start gap-3">
+              <Globe className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-sm">Produit non reference sur les sites publics</p>
+                <p className="text-sm text-muted-foreground">Aucun prix web n&apos;a ete trouve pour ce produit. Contactez directement {p.supplier || "votre fournisseur"} pour obtenir les tarifs actuels.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* WEB DATA (only for physical products) */}
-        {!p.isService && p.webData && (() => {
+        {!p.isService && p.webData && p.webData.webPrices.length + p.webData.alternatives.length + p.webData.distributors.length > 0 && (() => {
           const isVerified = p.webData?.isVerified === true;
           return (
           <>
