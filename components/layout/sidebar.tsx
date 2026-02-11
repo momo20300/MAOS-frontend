@@ -68,6 +68,7 @@ const navigationSections = [
     id: "crm",
     title: "CRM",
     items: [
+      { name: "Dashboard CRM", href: "/crm", icon: BarChart3 },
       { name: "Clients", href: "/clients", icon: Users },
       { name: "Leads", href: "/leads", icon: UserPlus, minRole: 'MANAGER' as UserRole },
       { name: "Opportunités", href: "/opportunities", icon: Target, minRole: 'MANAGER' as UserRole },
@@ -88,6 +89,7 @@ const navigationSections = [
     id: "achats",
     title: "Achats",
     items: [
+      { name: "Dashboard Achats", href: "/purchases", icon: BarChart3 },
       { name: "Fournisseurs", href: "/suppliers", icon: Building2 },
       { name: "Commandes Achats", href: "/purchase-orders", icon: ShoppingCart },
       { name: "Réceptions", href: "/purchase-receipts", icon: Truck },
@@ -98,6 +100,7 @@ const navigationSections = [
     id: "stock",
     title: "Stock",
     items: [
+      { name: "Dashboard Stock", href: "/stock", icon: BarChart3 },
       { name: "Articles", href: "/products", icon: Package },
       { name: "Entrepôts", href: "/warehouses", icon: Warehouse, minRole: 'MANAGER' as UserRole },
       { name: "Mouvements", href: "/stock-entries", icon: BarChart3, minRole: 'MANAGER' as UserRole },
@@ -107,6 +110,7 @@ const navigationSections = [
     id: "comptabilite",
     title: "Comptabilité",
     items: [
+      { name: "Dashboard Compta", href: "/accounting", icon: BarChart3 },
       { name: "Plan Comptable", href: "/accounts", icon: Calculator },
       { name: "Écritures", href: "/journal-entries", icon: FileBarChart },
       { name: "Paiements", href: "/payments", icon: CreditCard },

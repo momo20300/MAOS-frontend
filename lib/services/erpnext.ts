@@ -69,6 +69,54 @@ export const getSalesDashboard = async (): Promise<SalesDashboardData | null> =>
 };
 
 // ============================================================================
+// CRM Dashboard
+// ============================================================================
+
+export interface CrmDashboardData {
+  kpis: {
+    totalClients: number;
+    newThisMonth: number;
+    newLastMonth: number;
+    activeLeads: number;
+    openOpportunities: number;
+    avgRevenuePerClient: number;
+    concentration: number;
+    yearCA: number;
+  };
+  typeDistribution: Array<{ name: string; value: number }>;
+  territories: Array<{ name: string; count: number }>;
+  topClients: Array<{ name: string; total: number; pct: number }>;
+  leadPipeline: Array<{ status: string; count: number }>;
+  monthlyNewClients: Array<{ month: string; count: number }>;
+  recentLeads: Array<{
+    name: string;
+    lead_name: string;
+    company_name: string;
+    status: string;
+    source: string;
+  }>;
+  inactiveClients: Array<{
+    name: string;
+    customer_name: string;
+    customer_type: string;
+    territory: string;
+  }>;
+}
+
+export const getCrmDashboard = async (): Promise<CrmDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/crm/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch CRM dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('CRM dashboard error:', error);
+    return null;
+  }
+};
+
+// ============================================================================
 // Dashboard KPIs
 // ============================================================================
 
