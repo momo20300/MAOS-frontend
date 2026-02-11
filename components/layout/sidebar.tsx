@@ -77,6 +77,7 @@ const navigationSections = [
     id: "ventes",
     title: "Ventes",
     items: [
+      { name: "Dashboard Ventes", href: "/sales", icon: TrendingUp },
       { name: "Devis", href: "/quotations", icon: ClipboardList, minRole: 'MANAGER' as UserRole },
       { name: "Commandes", href: "/orders", icon: ShoppingCart },
       { name: "Livraisons", href: "/deliveries", icon: Truck },

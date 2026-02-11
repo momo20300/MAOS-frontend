@@ -23,6 +23,52 @@ const handleMutationResponse = async (response: Response, defaultError: string) 
 };
 
 // ============================================================================
+// Sales Dashboard
+// ============================================================================
+
+export interface SalesDashboardData {
+  kpis: {
+    thisMonthCA: number;
+    lastMonthCA: number;
+    yearCA: number;
+    growth: number;
+    invoiceCount: number;
+    unpaidAmount: number;
+    unpaidCount: number;
+    avgInvoice: number;
+  };
+  topClients: Array<{ name: string; total: number; pct: number }>;
+  monthly: Array<{ month: string; total: number }>;
+  overdue: Array<{
+    name: string;
+    customer: string;
+    amount: number;
+    dueDate: string;
+    daysOverdue: number;
+  }>;
+  recentOrders: Array<{
+    name: string;
+    customer_name: string;
+    transaction_date: string;
+    base_grand_total: number;
+    status: string;
+  }>;
+}
+
+export const getSalesDashboard = async (): Promise<SalesDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/sales/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch sales dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Sales dashboard error:', error);
+    return null;
+  }
+};
+
+// ============================================================================
 // Dashboard KPIs
 // ============================================================================
 
