@@ -379,6 +379,89 @@ export const getProjectsDashboard = async (): Promise<ProjectsDashboardData | nu
   }
 };
 
+export interface QualityDashboardData {
+  kpis: {
+    totalInspections: number;
+    acceptedInspections: number;
+    rejectedInspections: number;
+    acceptanceRate: number;
+    totalNC: number;
+    openNC: number;
+    resolvedNC: number;
+  };
+  inspectionTypes: Array<{ name: string; count: number }>;
+  inspectionStatusDistribution: Array<{ status: string; count: number }>;
+  severityDistribution: Array<{ name: string; count: number }>;
+  ncStatusDistribution: Array<{ status: string; count: number }>;
+  monthlyInspections: Array<{ month: string; accepted: number; rejected: number; total: number }>;
+  topInspectedItems: Array<{ code: string; name: string; total: number; accepted: number; rejected: number }>;
+  recentInspections: Array<{
+    name: string;
+    item_name: string;
+    status: string;
+    inspection_type: string;
+    inspection_date: string;
+  }>;
+  recentNC: Array<{
+    name: string;
+    subject: string;
+    status: string;
+    severity: string;
+    opening_date: string;
+  }>;
+}
+
+export const getQualityDashboard = async (): Promise<QualityDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/quality/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch Quality dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Quality dashboard error:', error);
+    return null;
+  }
+};
+
+export interface SupportDashboardData {
+  kpis: {
+    totalIssues: number;
+    openIssues: number;
+    repliedIssues: number;
+    resolvedIssues: number;
+    resolutionRate: number;
+    avgResolutionDays: number;
+  };
+  statusDistribution: Array<{ status: string; count: number }>;
+  priorityDistribution: Array<{ name: string; count: number }>;
+  issueTypes: Array<{ name: string; count: number }>;
+  monthlyIssues: Array<{ month: string; opened: number; resolved: number }>;
+  topCustomers: Array<{ name: string; count: number }>;
+  recentIssues: Array<{
+    name: string;
+    subject: string;
+    status: string;
+    priority: string;
+    issue_type: string;
+    opening_date: string;
+    customer: string;
+  }>;
+}
+
+export const getSupportDashboard = async (): Promise<SupportDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/support/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch Support dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Support dashboard error:', error);
+    return null;
+  }
+};
+
 // ============================================================================
 // Dashboard KPIs
 // ============================================================================

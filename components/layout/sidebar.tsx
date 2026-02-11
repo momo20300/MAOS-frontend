@@ -138,6 +138,7 @@ const navigationSections = [
     id: "qualite",
     title: "Qualité",
     items: [
+      { name: "Dashboard Qualite", href: "/quality", icon: BarChart3 },
       { name: "Inspections", href: "/quality-inspections", icon: CheckCircle },
       { name: "Non-conformités", href: "/non-conformance", icon: FileText },
     ],
@@ -155,6 +156,7 @@ const navigationSections = [
     id: "support",
     title: "Support",
     items: [
+      { name: "Dashboard Support", href: "/support-dashboard", icon: BarChart3 },
       { name: "Tickets", href: "/tickets", icon: Headphones },
       { name: "Base Connaissances", href: "/knowledge-base", icon: FileText },
     ],
