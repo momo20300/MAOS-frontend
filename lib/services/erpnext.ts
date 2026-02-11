@@ -462,6 +462,86 @@ export const getSupportDashboard = async (): Promise<SupportDashboardData | null
   }
 };
 
+export interface AssetsDashboardData {
+  kpis: {
+    totalAssets: number;
+    submittedAssets: number;
+    draftAssets: number;
+    scrappedAssets: number;
+    soldAssets: number;
+    totalGrossValue: number;
+    totalDepreciation: number;
+    totalNetValue: number;
+  };
+  categoryDistribution: Array<{ name: string; count: number; value: number }>;
+  statusDistribution: Array<{ status: string; count: number }>;
+  locationDistribution: Array<{ name: string; count: number }>;
+  depreciationMethods: Array<{ name: string; count: number }>;
+  topAssets: Array<{
+    name: string;
+    asset_name: string;
+    category: string;
+    gross_value: number;
+    net_value: number;
+    status: string;
+  }>;
+  recentAssets: Array<{
+    name: string;
+    asset_name: string;
+    category: string;
+    status: string;
+    gross_value: number;
+    purchase_date: string;
+  }>;
+}
+
+export const getAssetsDashboard = async (): Promise<AssetsDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/assets/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch Assets dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Assets dashboard error:', error);
+    return null;
+  }
+};
+
+export interface ReportsDashboardData {
+  kpis: {
+    totalReports: number;
+    categoryCount: number;
+    hasData: boolean;
+  };
+  categories: Array<{
+    name: string;
+    count: number;
+    reports: Array<{ id: string; title: string; description: string; icon: string }>;
+  }>;
+  dataCounts: {
+    invoices: number;
+    purchaseOrders: number;
+    items: number;
+    customers: number;
+    suppliers: number;
+    employees: number;
+  };
+}
+
+export const getReportsDashboard = async (): Promise<ReportsDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/reports/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch Reports dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Reports dashboard error:', error);
+    return null;
+  }
+};
+
 // ============================================================================
 // Dashboard KPIs
 // ============================================================================

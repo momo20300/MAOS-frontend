@@ -121,6 +121,7 @@ const navigationSections = [
     id: "actifs",
     title: "Actifs/Immo.",
     items: [
+      { name: "Dashboard Actifs", href: "/assets-dashboard", icon: BarChart3 },
       { name: "Actifs", href: "/assets", icon: Landmark },
       { name: "Amortissements", href: "/depreciation", icon: TrendingUp },
     ],
@@ -190,6 +191,7 @@ const navigationSections = [
     id: "rapports",
     title: "Rapports",
     items: [
+      { name: "Dashboard Rapports", href: "/reports-dashboard", icon: BarChart3 },
       { name: "Rapport d'Exploitation", href: "/reports/exploitation", icon: TrendingUp },
       { name: "Analyse Produit", href: "/reports/product-analysis", icon: Package },
       { name: "Tous les Rapports", href: "/reports", icon: FileBarChart },
