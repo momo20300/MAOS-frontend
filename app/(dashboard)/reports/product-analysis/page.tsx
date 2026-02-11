@@ -96,6 +96,7 @@ interface ProductAnalysis {
   itemName: string;
   itemGroup: string;
   supplier: string;
+  isService?: boolean;
   totalRevenue: number;
   totalQtySold: number;
   invoiceCount: number;
@@ -119,6 +120,7 @@ interface ProductAnalysis {
     alternatives: Alternative[];
     distributors: Distributor[];
     priceComparison: PriceComparison;
+    isVerified?: boolean;
   };
 }
 
@@ -580,10 +582,39 @@ export default function ProductAnalysisPage() {
           </Card>
         )}
 
-        {/* WEB DATA */}
-        {p.webData && (
+        {/* SERVICE NOTICE */}
+        {p.isService && (
+          <Card className="border-l-4 border-l-amber-500 bg-amber-50 dark:bg-amber-900/10">
+            <CardContent className="p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-sm">Service / Abonnement</p>
+                <p className="text-sm text-muted-foreground">Ce produit est un service ou abonnement. La comparaison prix web n&apos;est pas applicable pour les services proprietaires.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* WEB DATA (only for physical products) */}
+        {!p.isService && p.webData && (() => {
+          const isVerified = p.webData?.isVerified === true;
+          return (
           <>
-            {p.webData.priceComparison.alerts.length > 0 && (
+            {/* Unverified data warning */}
+            {!isVerified && (p.webData.webPrices.length > 0 || p.webData.alternatives.length > 0) && (
+              <Card className="border-l-4 border-l-amber-500 bg-amber-50 dark:bg-amber-900/10">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-sm">Prix estimes par IA — non verifies sur le web</p>
+                    <p className="text-sm text-muted-foreground">Les prix et fournisseurs affiches sont des estimations. Verifiez directement aupres des fournisseurs.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Price alerts (only for verified data) */}
+            {isVerified && p.webData.priceComparison.alerts.length > 0 && (
               <div className="space-y-2">
                 {p.webData.priceComparison.alerts.map((alert, i) => (
                   <Card key={i} className={cn("border-l-4", alert.type === "OVERPAYING" ? "border-l-red-500 bg-red-50 dark:bg-red-900/10" : alert.type === "GOOD_DEAL" ? "border-l-green-500 bg-green-50 dark:bg-green-900/10" : "border-l-amber-500 bg-amber-50 dark:bg-amber-900/10")}>
@@ -604,7 +635,8 @@ export default function ProductAnalysisPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Globe className="h-4 w-4 text-blue-500" />
-                    Veille Prix — Comparaison Marche
+                    {isVerified ? "Veille Prix — Comparaison Marche" : "Estimation Prix Marche"}
+                    {!isVerified && <Badge variant="outline" className="text-xs text-amber-600">Estime</Badge>}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -617,7 +649,7 @@ export default function ProductAnalysisPage() {
                           <th className="py-2 px-2">Conditionnement</th>
                           <th className="py-2 px-2 text-right">Prix</th>
                           <th className="py-2 px-2 text-right">DH</th>
-                          <th className="py-2 px-2">Lien</th>
+                          {isVerified && <th className="py-2 px-2">Lien</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -628,13 +660,15 @@ export default function ProductAnalysisPage() {
                             <td className="py-2 px-2 text-muted-foreground">{wp.packaging}</td>
                             <td className="py-2 px-2 text-right">{wp.price} {wp.currency}</td>
                             <td className="py-2 px-2 text-right font-semibold">{fmtMAD(wp.priceMAD)}</td>
-                            <td className="py-2 px-2">
-                              {wp.url && (
-                                <a href={wp.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1">
-                                  <ExternalLink className="h-3 w-3" /> Voir
-                                </a>
-                              )}
-                            </td>
+                            {isVerified && (
+                              <td className="py-2 px-2">
+                                {wp.url && (
+                                  <a href={wp.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1">
+                                    <ExternalLink className="h-3 w-3" /> Voir
+                                  </a>
+                                )}
+                              </td>
+                            )}
                           </tr>
                         ))}
                         <tr className="border-t-2 bg-emerald-50 dark:bg-emerald-900/10 font-semibold">
@@ -643,7 +677,7 @@ export default function ProductAnalysisPage() {
                           <td className="py-2 px-2">-</td>
                           <td className="py-2 px-2 text-right">-</td>
                           <td className="py-2 px-2 text-right text-emerald-600 dark:text-emerald-400">{fmtMAD(p.webData!.priceComparison.internalPricePerUnit)}</td>
-                          <td className="py-2 px-2 text-xs text-muted-foreground">(prix interne)</td>
+                          {isVerified && <td className="py-2 px-2 text-xs text-muted-foreground">(prix interne)</td>}
                         </tr>
                       </tbody>
                     </table>
@@ -652,13 +686,6 @@ export default function ProductAnalysisPage() {
                     <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg text-sm">
                       <p className="font-semibold text-blue-700 dark:text-blue-300 mb-1">Recommandation</p>
                       <p className="text-muted-foreground">{p.webData.priceComparison.recommendation}</p>
-                    </div>
-                  )}
-                  {p.webData.priceComparison.potentialAnnualSavings > 0 && (
-                    <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg text-sm">
-                      <p className="font-semibold text-amber-700 dark:text-amber-300">
-                        Economie potentielle annuelle : {fmtMAD(p.webData.priceComparison.potentialAnnualSavings)}
-                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -714,7 +741,8 @@ export default function ProductAnalysisPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-amber-500" />
-                    Alternatives de substitution certifiees ({p.webData.alternatives.length})
+                    {isVerified ? "Alternatives de substitution certifiees" : "Suggestions d'alternatives (a verifier)"}
+                    {!isVerified && <Badge variant="outline" className="text-xs text-amber-600">Estime</Badge>}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -739,7 +767,7 @@ export default function ProductAnalysisPage() {
                           )}
                           <p className="text-xs text-muted-foreground">{alt.advantages}</p>
                           {alt.price && <p className="text-sm font-semibold mt-2">{alt.price} {alt.priceCurrency || "EUR"}</p>}
-                          {alt.url && (
+                          {isVerified && alt.url && (
                             <a href={alt.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-xs hover:underline mt-1 flex items-center gap-1">
                               <ExternalLink className="h-3 w-3" /> Fiche produit
                             </a>
@@ -752,7 +780,8 @@ export default function ProductAnalysisPage() {
               </Card>
             )}
           </>
-        )}
+          );
+        })()}
 
         {/* Margin Summary */}
         <Card className="border-t-4 border-t-emerald-500">
@@ -766,7 +795,9 @@ export default function ProductAnalysisPage() {
                 <p className="text-xl font-bold text-emerald-600">{fmtMAD(p.totalRevenue)}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">COGS (cout des ventes)</p>
+                <p className="text-sm text-muted-foreground">
+                  {hasNoCost ? "COGS" : `COGS (${Math.round(p.totalQtySold)} x ${fmtMAD(p.avgPurchasePrice)})`}
+                </p>
                 <p className="text-xl font-bold text-blue-600">
                   {hasNoCost ? "N/D" : fmtMAD(p.totalQtySold * p.avgPurchasePrice)}
                 </p>
