@@ -287,7 +287,8 @@ export default function ManufacturingDashboardPage() {
                   {topItems.map((item) => {
                     const rate = item.planned > 0 ? Math.round((item.produced / item.planned) * 100) : 0;
                     return (
-                      <tr key={item.code} className="border-b hover:bg-muted/50 transition-colors">
+                      <Link key={item.code} href="/products" className="contents">
+                      <tr className="border-b hover:bg-muted/50 transition-colors cursor-pointer">
                         <td className="py-2 px-3 font-mono text-xs">{item.code}</td>
                         <td className="py-2 px-3 font-semibold">{item.name}</td>
                         <td className="py-2 px-3 text-right">{item.planned.toLocaleString("fr-FR")}</td>
@@ -298,6 +299,7 @@ export default function ManufacturingDashboardPage() {
                           </span>
                         </td>
                       </tr>
+                      </Link>
                     );
                   })}
                 </tbody>
@@ -326,9 +328,9 @@ export default function ManufacturingDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {recentWOs.map((wo) => (
+                <Link key={wo.name} href="/work-orders" className="block">
                 <div
-                  key={wo.name}
-                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -350,6 +352,7 @@ export default function ManufacturingDashboardPage() {
                     </p>
                   </div>
                 </div>
+                </Link>
               ))}
             </div>
           </CardContent>

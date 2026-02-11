@@ -327,7 +327,8 @@ export default function AssetsDashboardPage() {
                 </thead>
                 <tbody>
                   {topAssets.map((asset) => (
-                    <tr key={asset.name} className="border-b hover:bg-muted/50 transition-colors">
+                    <Link key={asset.name} href="/assets-dashboard" className="contents">
+                    <tr className="border-b hover:bg-muted/50 transition-colors cursor-pointer">
                       <td className="py-2 px-3 font-mono text-xs">{asset.name}</td>
                       <td className="py-2 px-3 font-semibold">{asset.asset_name}</td>
                       <td className="py-2 px-3">{asset.category || "—"}</td>
@@ -339,6 +340,7 @@ export default function AssetsDashboardPage() {
                         </Badge>
                       </td>
                     </tr>
+                    </Link>
                   ))}
                 </tbody>
               </table>
@@ -366,9 +368,9 @@ export default function AssetsDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {recentAssets.map((asset) => (
+                <Link key={asset.name} href="/assets-dashboard" className="block">
                 <div
-                  key={asset.name}
-                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -388,6 +390,7 @@ export default function AssetsDashboardPage() {
                     </p>
                   </div>
                 </div>
+                </Link>
               ))}
             </div>
           </CardContent>

@@ -133,63 +133,71 @@ export default function BillingDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Factures</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalInvoices}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {paidInvoices} payees, {pendingInvoices} en attente
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/billing">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Factures</CardTitle>
+              <Receipt className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalInvoices}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {paidInvoices} payees, {pendingInvoices} en attente
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Montant Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {totalAmount.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Toutes factures confondues
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/billing">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Montant Total</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {totalAmount.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Toutes factures confondues
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Montant Paye</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success-400">
-              {paidAmount.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0}% du total
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/billing">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Montant Paye</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success-400">
+                {paidAmount.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0}% du total
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">En Attente</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${pendingInvoices > 0 ? "text-yellow-500" : "text-success-400"}`}>
-              {(totalAmount - paidAmount).toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {pendingInvoices} facture(s) en attente
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/billing">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">En Attente</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${pendingInvoices > 0 ? "text-yellow-500" : "text-success-400"}`}>
+                {(totalAmount - paidAmount).toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {pendingInvoices} facture(s) en attente
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Invoice List */}
@@ -211,9 +219,9 @@ export default function BillingDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {invoices.slice(0, 10).map((invoice) => (
+                <Link key={invoice.id || invoice.invoiceNumber} href="/billing" className="block">
                 <div
-                  key={invoice.id || invoice.invoiceNumber}
-                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -236,6 +244,7 @@ export default function BillingDashboardPage() {
                     </p>
                   </div>
                 </div>
+                </Link>
               ))}
             </div>
           </CardContent>

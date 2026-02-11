@@ -339,9 +339,9 @@ export default function SupportDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {recentIssues.map((issue) => (
+                <Link key={issue.name} href="/support-dashboard" className="block">
                 <div
-                  key={issue.name}
-                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2">
@@ -366,6 +366,7 @@ export default function SupportDashboardPage() {
                     {issue.opening_date ? new Date(issue.opening_date).toLocaleDateString("fr-FR") : "—"}
                   </p>
                 </div>
+                </Link>
               ))}
             </div>
           </CardContent>

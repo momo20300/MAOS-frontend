@@ -384,9 +384,9 @@ export default function ProjectsDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {projectList.map((project) => (
+                <Link key={project.name} href="/projects-dashboard" className="block">
                 <div
-                  key={project.name}
-                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/80 transition-colors cursor-pointer"
                 >
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2">
@@ -427,6 +427,7 @@ export default function ProjectsDashboardPage() {
                     )}
                   </div>
                 </div>
+                </Link>
               ))}
             </div>
           </CardContent>

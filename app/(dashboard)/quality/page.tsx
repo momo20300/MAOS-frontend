@@ -320,7 +320,8 @@ export default function QualityDashboardPage() {
                   {topInspectedItems.map((item) => {
                     const rate = item.total > 0 ? Math.round((item.accepted / item.total) * 100) : 0;
                     return (
-                      <tr key={item.code} className="border-b hover:bg-muted/50 transition-colors">
+                      <Link key={item.code} href="/quality" className="contents">
+                      <tr className="border-b hover:bg-muted/50 transition-colors cursor-pointer">
                         <td className="py-2 px-3 font-mono text-xs">{item.code}</td>
                         <td className="py-2 px-3 font-semibold">{item.name}</td>
                         <td className="py-2 px-3 text-right">{item.total}</td>
@@ -332,6 +333,7 @@ export default function QualityDashboardPage() {
                           </span>
                         </td>
                       </tr>
+                      </Link>
                     );
                   })}
                 </tbody>
@@ -361,9 +363,9 @@ export default function QualityDashboardPage() {
             <CardContent>
               <div className="space-y-2">
                 {recentInspections.map((insp) => (
+                  <Link key={insp.name} href="/quality" className="block">
                   <div
-                    key={insp.name}
-                    className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors"
+                    className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -380,6 +382,7 @@ export default function QualityDashboardPage() {
                       {insp.inspection_date ? new Date(insp.inspection_date).toLocaleDateString("fr-FR") : "—"}
                     </p>
                   </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>
@@ -404,9 +407,9 @@ export default function QualityDashboardPage() {
             <CardContent>
               <div className="space-y-2">
                 {recentNC.map((nc) => (
+                  <Link key={nc.name} href="/quality" className="block">
                   <div
-                    key={nc.name}
-                    className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors"
+                    className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -428,6 +431,7 @@ export default function QualityDashboardPage() {
                       {nc.opening_date ? new Date(nc.opening_date).toLocaleDateString("fr-FR") : "—"}
                     </p>
                   </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>
