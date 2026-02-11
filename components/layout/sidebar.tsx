@@ -161,6 +161,7 @@ const navigationSections = [
     id: "rh",
     title: "RH",
     items: [
+      { name: "Dashboard RH", href: "/hr", icon: BarChart3 },
       { name: "Employés", href: "/employees", icon: UserCog },
       { name: "Présences", href: "/attendance", icon: CalendarDays },
     ],

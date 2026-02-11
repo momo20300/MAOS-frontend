@@ -214,6 +214,91 @@ export const getStockDashboard = async (): Promise<StockDashboardData | null> =>
 };
 
 // ============================================================================
+// Accounting Dashboard
+// ============================================================================
+
+export interface AccountingDashboardData {
+  kpis: {
+    totalRevenue: number;
+    totalExpenses: number;
+    profit: number;
+    margin: number;
+    thisMonthRevenue: number;
+    lastMonthRevenue: number;
+    totalReceivable: number;
+    receivableCount: number;
+    totalPayable: number;
+    payableCount: number;
+    paymentCount: number;
+    journalCount: number;
+  };
+  monthlyPL: Array<{ month: string; revenue: number; expenses: number; profit: number }>;
+  paymentBreakdown: Array<{ name: string; value: number }>;
+  paymentByMode: Array<{ name: string; amount: number }>;
+  recentPayments: Array<{
+    name: string;
+    type: string;
+    party: string;
+    amount: number;
+    date: string;
+    mode: string;
+  }>;
+}
+
+export const getAccountingDashboard = async (): Promise<AccountingDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/erp/accounting/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch accounting dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Accounting dashboard error:', error);
+    return null;
+  }
+};
+
+// ============================================================================
+// HR Dashboard
+// ============================================================================
+
+export interface HrDashboardData {
+  kpis: {
+    totalEmployees: number;
+    activeEmployees: number;
+    leftEmployees: number;
+    newHires: number;
+    departmentCount: number;
+  };
+  departments: Array<{ name: string; count: number }>;
+  genderDistribution: Array<{ name: string; count: number }>;
+  designations: Array<{ name: string; count: number }>;
+  statusDistribution: Array<{ status: string; count: number }>;
+  monthlyJoining: Array<{ month: string; count: number }>;
+  employeeList: Array<{
+    name: string;
+    employee_name: string;
+    designation: string;
+    department: string;
+    gender: string;
+    date_of_joining: string;
+  }>;
+}
+
+export const getHrDashboard = async (): Promise<HrDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/hr/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch HR dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('HR dashboard error:', error);
+    return null;
+  }
+};
+
+// ============================================================================
 // Dashboard KPIs
 // ============================================================================
 
