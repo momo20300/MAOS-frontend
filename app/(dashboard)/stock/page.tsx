@@ -1,352 +1,406 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { getStockItems, getItems, createStockEntry, exportToCSV, printDocument } from "@/lib/services/erpnext";
-import { StockEntryForm } from "@/components/forms";
+import { getStockDashboard, StockDashboardData } from "@/lib/services/erpnext";
 import {
-  Package, AlertTriangle, TrendingUp, Plus, Search,
-  Download, Printer, FileSpreadsheet, ChevronLeft, ChevronRight, Warehouse
+  Package, AlertTriangle, RefreshCw, BarChart3, DollarSign,
+  ArrowRight, Warehouse, TrendingUp, ArrowDownUp,
 } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell, Legend,
+} from "recharts";
 
-interface StockItem {
-  name: string;
-  item_name: string;
-  item_group: string;
-  stock_uom: string;
-  actual_qty?: number;
-  warehouse?: string;
-}
+const COLORS = ["#6bbc8e", "#4f9cf7", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#14b8a6"];
+const ENTRY_COLORS: Record<string, string> = {
+  "Material Receipt": "#6bbc8e",
+  "Material Issue": "#ef4444",
+  "Material Transfer": "#4f9cf7",
+  Manufacture: "#f59e0b",
+  Repack: "#8b5cf6",
+};
 
-const columns = [
-  { key: "item_name", label: "Nom" },
-  { key: "name", label: "Code" },
-  { key: "item_group", label: "Categorie" },
-  { key: "actual_qty", label: "Quantite" },
-  { key: "stock_uom", label: "Unite" },
-  { key: "warehouse", label: "Entrepot" },
-];
-
-interface AvailableItem {
-  item_code: string;
-  item_name: string;
-}
-
-export default function StockPage() {
-  const [items, setItems] = useState<StockItem[]>([]);
-  const [filteredItems, setFilteredItems] = useState<StockItem[]>([]);
-  const [availableItems, setAvailableItems] = useState<AvailableItem[]>([]);
-  const [search, setSearch] = useState("");
-  const [groupFilter, setGroupFilter] = useState("all");
+export default function StockDashboardPage() {
+  const [data, setData] = useState<StockDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const pageSize = 12;
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchItems = async () => {
-    setLoading(true);
-    const [stockData, itemsData] = await Promise.all([
-      getStockItems(),
-      getItems(),
-    ]);
-    setItems(stockData);
-    setFilteredItems(stockData);
-    setAvailableItems(itemsData);
+  const fetchData = useCallback(async (initial = false) => {
+    if (initial) setLoading(true);
+    setError(null);
+    try {
+      const result = await getStockDashboard();
+      if (result) {
+        setData(result);
+      } else {
+        setError("Impossible de charger les donnees stock");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur de connexion");
+    }
     setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchItems();
   }, []);
 
   useEffect(() => {
-    let filtered = items.filter(
-      (item) =>
-        item.item_name?.toLowerCase().includes(search.toLowerCase()) ||
-        item.name?.toLowerCase().includes(search.toLowerCase())
-    );
-
-    if (groupFilter !== "all") {
-      filtered = filtered.filter((item) => item.item_group === groupFilter);
-    }
-
-    setFilteredItems(filtered);
-    setCurrentPage(1);
-  }, [search, groupFilter, items]);
-
-  const groups = Array.from(new Set(items.map((item) => item.item_group).filter(Boolean)));
-  const criticalItems = items.filter((i) => (i.actual_qty || 0) < 10);
-  const totalPages = Math.ceil(filteredItems.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedItems = filteredItems.slice(startIndex, startIndex + pageSize);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
-
-  const handleExportCSV = () => {
-    exportToCSV(filteredItems, columns, "stock-maos");
-    showToast("Export CSV telecharge", "success");
-  };
-
-  const handlePrint = () => {
-    printDocument(filteredItems, columns, "Inventaire du Stock");
-  };
-
-  const handleCreateStockEntry = async (data: {
-    stock_entry_type: "Material Receipt" | "Material Issue" | "Material Transfer";
-    items: Array<{ item_code: string; qty: number; s_warehouse?: string; t_warehouse?: string }>;
-    posting_date: string;
-  }) => {
-    try {
-      await createStockEntry(data);
-      showToast("Mouvement de stock enregistre avec succes", "success");
-      fetchItems();
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "Erreur lors de l'enregistrement", "error");
-      throw error;
-    }
-  };
-
-  const getStockBadge = (qty: number | undefined) => {
-    const value = qty || 0;
-    if (value <= 0) {
-      return <Badge variant="destructive" className="rounded-lg">Rupture</Badge>;
-    }
-    if (value < 10) {
-      return <Badge className="rounded-lg bg-yellow-500">Critique</Badge>;
-    }
-    if (value < 50) {
-      return <Badge variant="secondary" className="rounded-lg">Bas</Badge>;
-    }
-    return <Badge variant="default" className="rounded-lg bg-success-400">OK</Badge>;
-  };
+    fetchData(true);
+  }, [fetchData]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement du stock...
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-lg text-muted-foreground">Chargement du stock...</p>
         </div>
       </div>
     );
   }
 
+  if (error || !data) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center space-y-4">
+          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto" />
+          <p className="text-lg">{error || "Donnees indisponibles"}</p>
+          <Button onClick={() => fetchData(true)}>Reessayer</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const { kpis, warehouseValues, topItemsByValue, itemGroups, entryTypes, criticalItems, lowStockItems } = data;
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-sm animate-in slide-in-from-bottom-5 ${
-            toast.type === "success"
-              ? "border-success-100 bg-success-50/90 text-green-900 dark:border-green-800 dark:bg-green-950/90 dark:text-green-100"
-              : "border-danger-100 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/90 dark:text-red-100"
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Gestion du Stock</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Stock</h2>
           <p className="text-muted-foreground">
-            Inventaire et mouvements ({items.length} articles)
+            Tableau de bord de l&apos;inventaire
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)} className="rounded-xl">
-          <Plus className="mr-2 h-4 w-4" />
-          Mouvement Stock
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/products">
+            <Button variant="outline" className="rounded-xl">
+              <Package className="mr-2 h-4 w-4" />
+              Articles
+            </Button>
+          </Link>
+          <Link href="/stock-entries">
+            <Button variant="outline" className="rounded-xl">
+              <ArrowDownUp className="mr-2 h-4 w-4" />
+              Mouvements
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      {/* KPI Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Articles en Stock</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Valeur Totale</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{items.length}</div>
+            <div className="text-2xl font-bold">
+              {kpis.totalStockValue.toLocaleString("fr-FR")} MAD
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {kpis.totalItems} article(s) stockables
+            </p>
           </CardContent>
         </Card>
+
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Stock Critique</CardTitle>
+            <CardTitle className="text-sm font-medium">Articles Critiques</CardTitle>
             <AlertTriangle className="h-4 w-4 text-danger-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-danger-400">{criticalItems.length}</div>
-            <p className="text-xs text-muted-foreground">Articles sous seuil</p>
+            <div className={`text-2xl font-bold ${kpis.criticalCount > 0 ? "text-danger-400" : "text-success-400"}`}>
+              {kpis.criticalCount}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              En rupture de stock
+            </p>
           </CardContent>
         </Card>
+
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Categories</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Stock Bas</CardTitle>
+            <TrendingUp className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{groups.length}</div>
+            <div className={`text-2xl font-bold ${kpis.lowStockCount > 0 ? "text-yellow-600" : "text-success-400"}`}>
+              {kpis.lowStockCount}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Sous seuil de reserve
+            </p>
           </CardContent>
         </Card>
+
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Entrepots</CardTitle>
             <Warehouse className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {new Set(items.map((i) => i.warehouse).filter(Boolean)).size || 1}
+            <div className="text-2xl font-bold">{kpis.activeWarehouses}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {kpis.entriesThisMonth} mouvement(s) ce mois
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Critical Items Alert */}
+      {kpis.criticalCount > 0 && (
+        <Card className="rounded-2xl border-red-500/50 bg-red-50/50 dark:bg-red-950/20">
+          <CardContent className="flex items-center gap-3 py-3">
+            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                {kpis.criticalCount} article(s) en rupture de stock
+              </p>
+              <p className="text-xs text-red-600 dark:text-red-400">
+                Action requise: verifiez les commandes fournisseurs pour ces articles.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Charts Row 1: Warehouse Values + Item Groups */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Warehouse className="h-4 w-4" />
+              Valeur par Entrepot
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[280px] w-full" style={{ minWidth: 0 }}>
+              {warehouseValues.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <PieChart>
+                    <Pie
+                      data={warehouseValues}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    >
+                      {warehouseValues.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`${Number(value).toLocaleString("fr-FR")} MAD`, "Valeur"]} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  Aucun entrepot
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Package className="h-4 w-4" />
+              Categories d&apos;Articles
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[280px] w-full" style={{ minWidth: 0 }}>
+              {itemGroups.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <BarChart data={itemGroups} layout="vertical" margin={{ top: 5, right: 20, left: 80, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis type="number" tick={{ fontSize: 10 }} className="text-muted-foreground" />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" width={80} />
+                    <Tooltip formatter={(value) => [`${value}`, "Articles"]} />
+                    <Bar dataKey="count" name="Articles" fill="#4f9cf7" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  Aucune categorie
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher un article..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-10 rounded-xl bg-muted/50 border-0 focus-visible:ring-1"
-            />
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant={groupFilter === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGroupFilter("all")}
-              className="rounded-xl"
-            >
-              Tous
-            </Button>
-            {groups.slice(0, 4).map((group) => (
-              <Button
-                key={group}
-                variant={groupFilter === group ? "default" : "outline"}
-                size="sm"
-                onClick={() => setGroupFilter(group)}
-                className="rounded-xl"
-              >
-                {group}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportCSV} className="rounded-xl">
-            <Download className="h-4 w-4 mr-2" />
-            Exporter CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={handlePrint} className="rounded-xl">
-            <Printer className="h-4 w-4 mr-2" />
-            Imprimer
-          </Button>
-        </div>
-      </div>
-
-      {/* Results count */}
-      <div className="flex items-center">
-        <Badge variant="secondary" className="rounded-lg">
-          {filteredItems.length} article(s)
-        </Badge>
-      </div>
-
-      {/* Table */}
+      {/* Top Items by Value */}
       <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle>Articles en stock</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <BarChart3 className="h-4 w-4" />
+            Top Articles par Valeur de Stock
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {paginatedItems.map((item) => (
-              <div
-                key={item.name}
-                className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
-              >
-                <div className="flex-1">
-                  <div className="font-medium">{item.item_name}</div>
-                  <div className="text-xs text-muted-foreground">{item.name}</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Badge variant="outline" className="rounded-lg">
-                    {item.item_group}
-                  </Badge>
-                  <div className="text-right min-w-[80px]">
-                    <div className="font-semibold">
-                      {item.actual_qty !== undefined ? item.actual_qty.toLocaleString() : "-"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{item.stock_uom}</div>
-                  </div>
-                  {getStockBadge(item.actual_qty)}
-                </div>
+          <div className="h-[300px] w-full" style={{ minWidth: 0 }}>
+            {topItemsByValue.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <BarChart data={topItemsByValue.slice(0, 10)} layout="vertical" margin={{ top: 5, right: 20, left: 120, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    className="text-muted-foreground"
+                  />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} className="text-muted-foreground" width={120} />
+                  <Tooltip formatter={(value) => [`${Number(value).toLocaleString("fr-FR")} MAD`, "Valeur"]} />
+                  <Bar dataKey="value" name="Valeur Stock" fill="#6bbc8e" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                Aucune donnee de stock
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Empty State */}
-      {filteredItems.length === 0 && (
-        <div className="text-center py-12">
-          <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-          <h3 className="mt-4 text-lg font-semibold">Aucun article en stock</h3>
-          <p className="text-muted-foreground">Ajoutez des articles stockables</p>
-        </div>
+      {/* Entry Types + Mouvements this month */}
+      {entryTypes.length > 0 && (
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ArrowDownUp className="h-4 w-4" />
+              Mouvements de Stock (ce mois)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[200px] w-full" style={{ minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <BarChart data={entryTypes} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="type" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                  <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
+                  <Tooltip />
+                  <Bar dataKey="count" name="Nombre" radius={[4, 4, 0, 0]}>
+                    {entryTypes.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={ENTRY_COLORS[entry.type] || COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-muted-foreground">
-            {startIndex + 1}-{Math.min(startIndex + pageSize, filteredItems.length)} sur{" "}
-            {filteredItems.length}
-          </p>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="h-8 w-8 p-0 rounded-lg"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="px-3 text-sm font-medium">
-              {currentPage} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="h-8 w-8 p-0 rounded-lg"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Tables: Critical Items + Low Stock */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Critical Items (Rupture) */}
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-danger-400" />
+                Articles en Rupture
+              </CardTitle>
+              <Link href="/products">
+                <Button variant="ghost" size="sm" className="text-xs">
+                  Voir tout <ArrowRight className="ml-1 h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            {criticalItems.length > 0 ? (
+              criticalItems.map((item) => (
+                <div
+                  key={item.code}
+                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.code} - {item.group}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{item.warehouse}</span>
+                    <Badge variant="destructive" className="text-xs">
+                      {item.qty}
+                    </Badge>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <TrendingUp className="h-8 w-8 mx-auto mb-2 text-success-400" />
+                <p className="text-sm font-medium">Aucune rupture</p>
+                <p className="text-xs">Tous les articles sont en stock</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Stock Entry Form Dialog */}
-      <StockEntryForm
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        onSubmit={handleCreateStockEntry}
-        items={availableItems}
-      />
+        {/* Low Stock Items */}
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-yellow-500" />
+                Stock Bas
+              </CardTitle>
+              <Link href="/products">
+                <Button variant="ghost" size="sm" className="text-xs">
+                  Voir tout <ArrowRight className="ml-1 h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            {lowStockItems.length > 0 ? (
+              lowStockItems.map((item) => (
+                <div
+                  key={item.code}
+                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.code}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{item.warehouse}</span>
+                    <Badge className="text-xs bg-yellow-500">
+                      {item.qty} / {item.reserved}
+                    </Badge>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">Stock OK</p>
+                <p className="text-xs">Aucun article sous seuil</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

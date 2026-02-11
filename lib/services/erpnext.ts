@@ -117,6 +117,103 @@ export const getCrmDashboard = async (): Promise<CrmDashboardData | null> => {
 };
 
 // ============================================================================
+// Purchase Dashboard
+// ============================================================================
+
+export interface PurchaseDashboardData {
+  kpis: {
+    yearTotal: number;
+    thisMonthTotal: number;
+    lastMonthTotal: number;
+    growth: number;
+    poCount: number;
+    pinvCount: number;
+    supplierCount: number;
+    outstandingAmount: number;
+    outstandingCount: number;
+    avgPO: number;
+    concentration: number;
+  };
+  topSuppliers: Array<{ name: string; total: number; pct: number }>;
+  monthly: Array<{ month: string; total: number }>;
+  poStatusDistribution: Array<{ status: string; count: number }>;
+  supplierGroups: Array<{ name: string; count: number }>;
+  overduePINVs: Array<{
+    name: string;
+    supplier: string;
+    amount: number;
+    dueDate: string;
+    daysOverdue: number;
+  }>;
+  recentPOs: Array<{
+    name: string;
+    supplier_name: string;
+    transaction_date: string;
+    base_grand_total: number;
+    status: string;
+  }>;
+}
+
+export const getPurchaseDashboard = async (): Promise<PurchaseDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/purchase/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch purchase dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Purchase dashboard error:', error);
+    return null;
+  }
+};
+
+// ============================================================================
+// Stock Dashboard
+// ============================================================================
+
+export interface StockDashboardData {
+  kpis: {
+    totalItems: number;
+    totalStockValue: number;
+    criticalCount: number;
+    lowStockCount: number;
+    activeWarehouses: number;
+    entriesThisMonth: number;
+  };
+  warehouseValues: Array<{ name: string; value: number }>;
+  topItemsByValue: Array<{ code: string; name: string; value: number; qty: number }>;
+  itemGroups: Array<{ name: string; count: number }>;
+  entryTypes: Array<{ type: string; count: number; amount: number }>;
+  criticalItems: Array<{
+    code: string;
+    name: string;
+    group: string;
+    qty: number;
+    warehouse: string;
+  }>;
+  lowStockItems: Array<{
+    code: string;
+    name: string;
+    qty: number;
+    reserved: number;
+    warehouse: string;
+  }>;
+}
+
+export const getStockDashboard = async (): Promise<StockDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/stock/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch stock dashboard');
+    const data = await response.json();
+    if (data.success) return data.data;
+    throw new Error(data.error || 'Erreur inconnue');
+  } catch (error) {
+    console.error('Stock dashboard error:', error);
+    return null;
+  }
+};
+
+// ============================================================================
 // Dashboard KPIs
 // ============================================================================
 
