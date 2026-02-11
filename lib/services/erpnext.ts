@@ -542,6 +542,75 @@ export const getReportsDashboard = async (): Promise<ReportsDashboardData | null
   }
 };
 
+export interface BillingDashboardData {
+  subscription: {
+    pack: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    amount: number;
+  } | null;
+  invoices: Array<{
+    id: string;
+    invoiceNumber: string;
+    amount: number;
+    currency: string;
+    status: string;
+    period: string;
+    dueDate: string;
+    createdAt: string;
+  }>;
+}
+
+export const getBillingDashboard = async (): Promise<BillingDashboardData | null> => {
+  try {
+    const [subRes, invRes] = await Promise.all([
+      authFetch('/billing/subscription').catch(() => null),
+      authFetch('/billing/invoices').catch(() => null),
+    ]);
+    const subscription = subRes?.ok ? await subRes.json() : null;
+    const invoicesData = invRes?.ok ? await invRes.json() : [];
+    return {
+      subscription: subscription,
+      invoices: Array.isArray(invoicesData) ? invoicesData : (invoicesData?.data || []),
+    };
+  } catch (error) {
+    console.error('Billing dashboard error:', error);
+    return null;
+  }
+};
+
+export interface SuperAdminDashboardData {
+  overview: {
+    totalTenants: number;
+    activeTenants: number;
+    totalUsers: number;
+    mrr: number;
+    arr: number;
+  };
+  packDistribution: { STANDARD: number; PRO: number; PRO_PLUS: number };
+  metierDistribution: Record<string, number>;
+  growth: {
+    newTenantsThisMonth: number;
+    newUsersThisMonth: number;
+    churnRate: number;
+    retentionRate: number;
+  };
+  revenueByMonth: Array<{ month: string; revenue: number }>;
+}
+
+export const getSuperAdminDashboard = async (): Promise<SuperAdminDashboardData | null> => {
+  try {
+    const response = await authFetch('/api/superadmin/tenants/analytics');
+    if (!response.ok) throw new Error('Failed to fetch SuperAdmin dashboard');
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('SuperAdmin dashboard error:', error);
+    return null;
+  }
+};
+
 // ============================================================================
 // Dashboard KPIs
 // ============================================================================

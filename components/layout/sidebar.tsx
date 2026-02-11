@@ -175,6 +175,7 @@ const navigationSections = [
     id: "billing",
     title: "Abonnement",
     items: [
+      { name: "Dashboard Abo", href: "/billing-dashboard", icon: BarChart3 },
       { name: "Facturation", href: "/billing", icon: CreditCard },
     ],
   },
@@ -182,6 +183,7 @@ const navigationSections = [
     id: "superadmin",
     title: "SuperAdmin",
     items: [
+      { name: "Dashboard SA", href: "/superadmin-dashboard", icon: BarChart3 },
       { name: "Clients MAOS", href: "/superadmin/customers", icon: Building2 },
       { name: "Facturation", href: "/superadmin/billing", icon: Receipt },
       { name: "Analytics", href: "/superadmin/analytics", icon: BarChart3 },
