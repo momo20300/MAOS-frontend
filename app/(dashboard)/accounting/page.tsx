@@ -99,102 +99,114 @@ export default function AccountingDashboardPage() {
 
       {/* KPI Cards — Row 1 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Chiffre d&apos;Affaires</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success-400">
-              {kpis.totalRevenue.toLocaleString("fr-FR")} MAD
-            </div>
-            <div className="flex items-center gap-1 mt-1">
-              {revenueGrowth >= 0 ? (
-                <TrendingUp className="h-3 w-3 text-success-400" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-danger-400" />
-              )}
-              <span className={`text-xs font-medium ${revenueGrowth >= 0 ? "text-success-400" : "text-danger-400"}`}>
-                {revenueGrowth > 0 ? "+" : ""}{revenueGrowth}%
-              </span>
-              <span className="text-xs text-muted-foreground">vs mois dernier</span>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/invoices">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Chiffre d&apos;Affaires</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success-400">
+                {kpis.totalRevenue.toLocaleString("fr-FR")} MAD
+              </div>
+              <div className="flex items-center gap-1 mt-1">
+                {revenueGrowth >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-success-400" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-danger-400" />
+                )}
+                <span className={`text-xs font-medium ${revenueGrowth >= 0 ? "text-success-400" : "text-danger-400"}`}>
+                  {revenueGrowth > 0 ? "+" : ""}{revenueGrowth}%
+                </span>
+                <span className="text-xs text-muted-foreground">vs mois dernier</span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Charges</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-danger-400">
-              {kpis.totalExpenses.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Commandes fournisseurs cumul annee
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/purchase-invoices">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Charges</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-danger-400">
+                {kpis.totalExpenses.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Commandes fournisseurs cumul annee
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Resultat Net</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.profit >= 0 ? "text-success-400" : "text-danger-400"}`}>
-              {kpis.profit.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Marge: {kpis.margin}%
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/reports/exploitation">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Resultat Net</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.profit >= 0 ? "text-success-400" : "text-danger-400"}`}>
+                {kpis.profit.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Marge: {kpis.margin}%
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">CA du Mois</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {kpis.thisMonthRevenue.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.paymentCount} paiement(s) cette annee
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/invoices">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">CA du Mois</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.thisMonthRevenue.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.paymentCount} paiement(s) cette annee
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* KPI Cards — Row 2: Receivables & Payables */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="rounded-2xl border-l-4 border-l-blue-500">
-          <CardContent className="flex items-center gap-4 py-4">
-            <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-950">
-              <ArrowUpDown className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Creances Clients</p>
-              <p className="text-xl font-bold">{kpis.totalReceivable.toLocaleString("fr-FR")} MAD</p>
-              <p className="text-xs text-muted-foreground">{kpis.receivableCount} facture(s) en attente</p>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/invoices">
+          <Card className="rounded-2xl border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardContent className="flex items-center gap-4 py-4">
+              <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-950">
+                <ArrowUpDown className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Creances Clients</p>
+                <p className="text-xl font-bold">{kpis.totalReceivable.toLocaleString("fr-FR")} MAD</p>
+                <p className="text-xs text-muted-foreground">{kpis.receivableCount} facture(s) en attente</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl border-l-4 border-l-orange-500">
-          <CardContent className="flex items-center gap-4 py-4">
-            <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-950">
-              <ArrowUpDown className="h-5 w-5 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Dettes Fournisseurs</p>
-              <p className="text-xl font-bold">{kpis.totalPayable.toLocaleString("fr-FR")} MAD</p>
-              <p className="text-xs text-muted-foreground">{kpis.payableCount} facture(s) a payer</p>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/purchase-invoices">
+          <Card className="rounded-2xl border-l-4 border-l-orange-500 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardContent className="flex items-center gap-4 py-4">
+              <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-950">
+                <ArrowUpDown className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Dettes Fournisseurs</p>
+                <p className="text-xl font-bold">{kpis.totalPayable.toLocaleString("fr-FR")} MAD</p>
+                <p className="text-xs text-muted-foreground">{kpis.payableCount} facture(s) a payer</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Monthly P&L Chart */}
@@ -327,33 +339,34 @@ export default function AccountingDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {recentPayments.map((payment) => (
-                <div
-                  key={payment.name}
-                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{payment.name}</span>
-                      <Badge
-                        variant={payment.type === "Receive" ? "default" : "secondary"}
-                        className={`rounded-lg text-xs ${payment.type === "Receive" ? "bg-success-400" : ""}`}
-                      >
-                        {payment.type === "Receive" ? "Encaissement" : "Decaissement"}
-                      </Badge>
+                <Link href="/payments" key={payment.name} className="block">
+                  <div
+                    className="flex items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">{payment.name}</span>
+                        <Badge
+                          variant={payment.type === "Receive" ? "default" : "secondary"}
+                          className={`rounded-lg text-xs ${payment.type === "Receive" ? "bg-success-400" : ""}`}
+                        >
+                          {payment.type === "Receive" ? "Encaissement" : "Decaissement"}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {payment.party} {payment.mode ? `- ${payment.mode}` : ""}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {payment.party} {payment.mode ? `- ${payment.mode}` : ""}
-                    </p>
+                    <div className="text-right">
+                      <p className={`text-sm font-bold ${payment.type === "Receive" ? "text-success-400" : "text-danger-400"}`}>
+                        {payment.type === "Receive" ? "+" : "-"}{payment.amount.toLocaleString("fr-FR")} MAD
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(payment.date).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-bold ${payment.type === "Receive" ? "text-success-400" : "text-danger-400"}`}>
-                      {payment.type === "Receive" ? "+" : "-"}{payment.amount.toLocaleString("fr-FR")} MAD
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(payment.date).toLocaleDateString("fr-FR")}
-                    </p>
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>

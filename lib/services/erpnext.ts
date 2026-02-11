@@ -626,7 +626,7 @@ export interface HomeDashboardData {
   crm: { totalCustomers: number; activeLeads: number };
   quality: { totalInspections: number; acceptanceRate: number };
   support: { totalIssues: number; openIssues: number; resolutionRate: number };
-  monthly: Array<{ month: string; ventes: number; achats: number; marge: number }>;
+  monthly: Array<{ month: string; ventes: number; achats: number; marge: number; stock: number }>;
   year: number;
   alerts: Array<{ type: string; priority: string; title: string; detail: string; module: string; link: string }>;
 }

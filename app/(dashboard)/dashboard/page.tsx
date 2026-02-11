@@ -28,7 +28,7 @@ import {
 const EMPTY_MONTHLY = [
   "Jan", "Fev", "Mar", "Avr", "Mai", "Jun",
   "Jul", "Aou", "Sep", "Oct", "Nov", "Dec"
-].map(month => ({ month, ventes: 0, achats: 0, marge: 0 }));
+].map(month => ({ month, ventes: 0, achats: 0, marge: 0, stock: 0 }));
 
 const MODULE_CARDS = [
   { key: "sales", label: "Ventes", icon: FileText, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/30", link: "/sales" },
@@ -147,89 +147,98 @@ export default function DashboardPage() {
       {/* Row 1: Primary KPI Cards */}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {/* CA Annuel */}
-        <Card className="py-2">
-          <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
-            <CardTitle className="text-xs font-medium">CA Annuel</CardTitle>
-            <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-          </CardHeader>
-          <CardContent className="py-1 px-4">
-            <div className="text-xl font-bold text-emerald-600">
-              {fmtK(data?.finance.revenue || 0)} MAD
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-[10px] text-muted-foreground">12 derniers mois</p>
-              {data?.sales.thisMonthCA ? (
-                <div className="flex items-center gap-0.5">
-                  <TrendingUp className="h-2.5 w-2.5 text-emerald-500" />
-                  <span className="text-[10px] text-emerald-600 font-medium">{fmtK(data.sales.thisMonthCA)} ce mois</span>
-                </div>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/sales">
+          <Card className="py-2 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
+              <CardTitle className="text-xs font-medium">CA Annuel</CardTitle>
+              <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+            </CardHeader>
+            <CardContent className="py-1 px-4">
+              <div className="text-xl font-bold text-emerald-600">
+                {fmtK(data?.finance.revenue || 0)} MAD
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-[10px] text-muted-foreground">12 derniers mois</p>
+                {data?.sales.thisMonthCA ? (
+                  <div className="flex items-center gap-0.5">
+                    <TrendingUp className="h-2.5 w-2.5 text-emerald-500" />
+                    <span className="text-[10px] text-emerald-600 font-medium">{fmtK(data.sales.thisMonthCA)} ce mois</span>
+                  </div>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Marge Nette */}
-        <Card className="py-2">
-          <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
-            <CardTitle className="text-xs font-medium">Marge Nette</CardTitle>
-            <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
-          </CardHeader>
-          <CardContent className="py-1 px-4">
-            <div className={`text-xl font-bold ${margin >= 10 ? "text-blue-600" : "text-orange-600"}`}>
-              {fmtK(data?.finance.profit || 0)} MAD
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-[10px] text-muted-foreground">Benefice cumule</p>
-              <Badge variant={margin >= 10 ? "default" : "destructive"} className="text-[10px] px-1.5 py-0">
-                {margin.toFixed(1)}%
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/accounting">
+          <Card className="py-2 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
+              <CardTitle className="text-xs font-medium">Marge Nette</CardTitle>
+              <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
+            </CardHeader>
+            <CardContent className="py-1 px-4">
+              <div className={`text-xl font-bold ${margin >= 10 ? "text-blue-600" : "text-orange-600"}`}>
+                {fmtK(data?.finance.profit || 0)} MAD
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-[10px] text-muted-foreground">Benefice cumule</p>
+                <Badge variant={margin >= 10 ? "default" : "destructive"} className="text-[10px] px-1.5 py-0">
+                  {margin.toFixed(1)}%
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Factures Impayees */}
-        <Card className="py-2">
-          <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
-            <CardTitle className="text-xs font-medium">Factures Impayees</CardTitle>
-            <FileText className="h-3.5 w-3.5 text-yellow-500" />
-          </CardHeader>
-          <CardContent className="py-1 px-4">
-            <div className={`text-xl font-bold ${(data?.sales.unpaidCount || 0) > 0 ? "text-yellow-600" : "text-muted-foreground"}`}>
-              {data?.sales.unpaidCount || 0}
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-[10px] text-muted-foreground">
-                {data?.sales.unpaidAmount ? `${fmtK(data.sales.unpaidAmount)} MAD` : "A recouvrer"}
-              </p>
-              {(data?.sales.unpaidCount || 0) > 0 && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-yellow-600 border-yellow-300">En attente</Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/invoices">
+          <Card className="py-2 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
+              <CardTitle className="text-xs font-medium">Factures Impayees</CardTitle>
+              <FileText className="h-3.5 w-3.5 text-yellow-500" />
+            </CardHeader>
+            <CardContent className="py-1 px-4">
+              <div className={`text-xl font-bold ${(data?.sales.unpaidCount || 0) > 0 ? "text-yellow-600" : "text-muted-foreground"}`}>
+                {data?.sales.unpaidCount || 0}
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-[10px] text-muted-foreground">
+                  {data?.sales.unpaidAmount ? `${fmtK(data.sales.unpaidAmount)} MAD` : "A recouvrer"}
+                </p>
+                {(data?.sales.unpaidCount || 0) > 0 && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-yellow-600 border-yellow-300">En attente</Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Stock Critique */}
-        <Card className="py-2">
-          <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
-            <CardTitle className="text-xs font-medium">Stock Critique</CardTitle>
-            <AlertCircle className="h-3.5 w-3.5 text-red-500" />
-          </CardHeader>
-          <CardContent className="py-1 px-4">
-            <div className={`text-xl font-bold ${(data?.stock.criticalCount || 0) > 0 ? "text-red-600" : "text-muted-foreground"}`}>
-              {data?.stock.criticalCount || 0}
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-[10px] text-muted-foreground">Articles sous seuil</p>
-              {(data?.stock.criticalCount || 0) > 0 && (
-                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Alerte</Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/stock">
+          <Card className="py-2 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
+              <CardTitle className="text-xs font-medium">Stock Critique</CardTitle>
+              <AlertCircle className="h-3.5 w-3.5 text-red-500" />
+            </CardHeader>
+            <CardContent className="py-1 px-4">
+              <div className={`text-xl font-bold ${(data?.stock.criticalCount || 0) > 0 ? "text-red-600" : "text-muted-foreground"}`}>
+                {data?.stock.criticalCount || 0}
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-[10px] text-muted-foreground">Articles sous seuil</p>
+                {(data?.stock.criticalCount || 0) > 0 && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Alerte</Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Row 2: Monthly Performance Chart */}
-      <Card className="h-[220px]">
+      <Link href="/reports/exploitation">
+      <Card className="h-[220px] cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <BarChart3 className="h-4 w-4" />
@@ -251,11 +260,13 @@ export default function DashboardPage() {
                 <Line type="monotone" dataKey="ventes" name="Ventes" stroke="#6bbc8e" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="achats" name="Achats" stroke="#c3758c" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="marge" name="Marge" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="stock" name="Stock" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="5 5" />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
+      </Link>
 
       {/* Row 3: Module Summary Grid */}
       <div>
@@ -309,9 +320,9 @@ export default function DashboardPage() {
           <CardContent className="space-y-2 pt-0">
             {data?.sales.topProducts && data.sales.topProducts.length > 0 ? (
               data.sales.topProducts.slice(0, 5).map((product, index) => (
+                <Link key={product.name} href="/reports/product-analysis" className="block">
                 <div
-                  key={product.name}
-                  className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+                  className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors cursor-pointer"
                 >
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
                     index === 0 ? "bg-yellow-500/20 text-yellow-600" :
@@ -331,6 +342,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+                </Link>
               ))
             ) : (
               <div className="text-center py-4 text-muted-foreground">

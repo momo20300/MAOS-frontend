@@ -108,69 +108,77 @@ export default function CrmDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalClients}</div>
-            <div className="flex items-center gap-1 mt-1">
-              <UserPlus className="h-3 w-3 text-primary" />
-              <span className="text-xs text-primary font-medium">+{kpis.newThisMonth}</span>
-              <span className="text-xs text-muted-foreground">ce mois</span>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/clients">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalClients}</div>
+              <div className="flex items-center gap-1 mt-1">
+                <UserPlus className="h-3 w-3 text-primary" />
+                <span className="text-xs text-primary font-medium">+{kpis.newThisMonth}</span>
+                <span className="text-xs text-muted-foreground">ce mois</span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Nouveaux Clients</CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success-400">{kpis.newThisMonth}</div>
-            <div className="flex items-center gap-1 mt-1">
-              {clientGrowth >= 0 ? (
-                <TrendingUp className="h-3 w-3 text-success-400" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-danger-400" />
-              )}
-              <span className={`text-xs font-medium ${clientGrowth >= 0 ? "text-success-400" : "text-danger-400"}`}>
-                {clientGrowth > 0 ? "+" : ""}{clientGrowth}%
-              </span>
-              <span className="text-xs text-muted-foreground">vs mois dernier ({kpis.newLastMonth})</span>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/clients">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Nouveaux Clients</CardTitle>
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success-400">{kpis.newThisMonth}</div>
+              <div className="flex items-center gap-1 mt-1">
+                {clientGrowth >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-success-400" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-danger-400" />
+                )}
+                <span className={`text-xs font-medium ${clientGrowth >= 0 ? "text-success-400" : "text-danger-400"}`}>
+                  {clientGrowth > 0 ? "+" : ""}{clientGrowth}%
+                </span>
+                <span className="text-xs text-muted-foreground">vs mois dernier ({kpis.newLastMonth})</span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Leads Actifs</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{kpis.activeLeads}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.openOpportunities} opportunite(s) ouvertes
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/leads">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Leads Actifs</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">{kpis.activeLeads}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.openOpportunities} opportunite(s) ouvertes
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">CA Moyen / Client</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {kpis.avgRevenuePerClient.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              CA annuel: {kpis.yearCA.toLocaleString("fr-FR")} MAD
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/clients">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">CA Moyen / Client</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.avgRevenuePerClient.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                CA annuel: {kpis.yearCA.toLocaleString("fr-FR")} MAD
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Concentration Alert */}
@@ -341,28 +349,29 @@ export default function CrmDashboardPage() {
           <CardContent className="space-y-2 pt-0">
             {topClients.length > 0 ? (
               topClients.map((client, index) => (
-                <div
-                  key={client.name}
-                  className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
-                >
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    index === 0 ? "bg-yellow-500/20 text-yellow-600" :
-                    index === 1 ? "bg-gray-400/20 text-gray-500" :
-                    index === 2 ? "bg-orange-500/20 text-orange-500" :
-                    "bg-muted text-muted-foreground"
-                  }`}>
-                    {index + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{client.name}</p>
-                    <p className="text-xs text-muted-foreground">{client.pct}% du CA</p>
+                <Link href="/crm" key={client.name} className="block">
+                  <div
+                    className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors cursor-pointer"
+                  >
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      index === 0 ? "bg-yellow-500/20 text-yellow-600" :
+                      index === 1 ? "bg-gray-400/20 text-gray-500" :
+                      index === 2 ? "bg-orange-500/20 text-orange-500" :
+                      "bg-muted text-muted-foreground"
+                    }`}>
+                      {index + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{client.name}</p>
+                      <p className="text-xs text-muted-foreground">{client.pct}% du CA</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">
+                        {client.total.toLocaleString("fr-FR")} MAD
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold">
-                      {client.total.toLocaleString("fr-FR")} MAD
-                    </p>
-                  </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="text-center py-4 text-muted-foreground">
@@ -390,28 +399,29 @@ export default function CrmDashboardPage() {
           <CardContent className="space-y-2 pt-0">
             {recentLeads.length > 0 ? (
               recentLeads.map((lead) => (
-                <div
-                  key={lead.name}
-                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{lead.lead_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {lead.company_name || "Particulier"} {lead.source ? `- ${lead.source}` : ""}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={
-                      lead.status === "Converted" ? "default" :
-                      lead.status === "Open" ? "secondary" :
-                      lead.status === "Replied" ? "outline" :
-                      "destructive"
-                    }
-                    className="text-xs ml-2"
+                <Link href="/leads" key={lead.name} className="block">
+                  <div
+                    className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors cursor-pointer"
                   >
-                    {lead.status}
-                  </Badge>
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{lead.lead_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {lead.company_name || "Particulier"} {lead.source ? `- ${lead.source}` : ""}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        lead.status === "Converted" ? "default" :
+                        lead.status === "Open" ? "secondary" :
+                        lead.status === "Replied" ? "outline" :
+                        "destructive"
+                      }
+                      className="text-xs ml-2"
+                    >
+                      {lead.status}
+                    </Badge>
+                  </div>
+                </Link>
               ))
             ) : (
               <div className="text-center py-4 text-muted-foreground">
@@ -435,19 +445,20 @@ export default function CrmDashboardPage() {
           <CardContent>
             <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
               {inactiveClients.map((client) => (
-                <div
-                  key={client.name}
-                  className="flex items-center gap-3 p-3 border rounded-xl hover:bg-muted/50 transition-colors"
-                >
-                  <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{client.customer_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {client.customer_type === "Company" ? "Entreprise" : "Particulier"}
-                      {client.territory ? ` - ${client.territory}` : ""}
-                    </p>
+                <Link href="/clients" key={client.name} className="block">
+                  <div
+                    className="flex items-center gap-3 p-3 border rounded-xl hover:bg-muted/80 transition-colors cursor-pointer"
+                  >
+                    <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{client.customer_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {client.customer_type === "Company" ? "Entreprise" : "Particulier"}
+                        {client.territory ? ` - ${client.territory}` : ""}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>

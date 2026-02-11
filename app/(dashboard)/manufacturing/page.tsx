@@ -103,59 +103,67 @@ export default function ManufacturingDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Ordres de Fabrication</CardTitle>
-            <Factory className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalWorkOrders}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.openWO} en cours, {kpis.completedWO} termines
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/work-orders">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Ordres de Fabrication</CardTitle>
+              <Factory className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalWorkOrders}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.openWO} en cours, {kpis.completedWO} termines
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Taux de Completion</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.completionRate >= 80 ? "text-success-400" : kpis.completionRate >= 50 ? "text-yellow-500" : "text-danger-400"}`}>
-              {kpis.completionRate}%
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.totalProduced.toLocaleString("fr-FR")} / {kpis.totalPlanned.toLocaleString("fr-FR")} unites
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/work-orders">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Taux de Completion</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.completionRate >= 80 ? "text-success-400" : kpis.completionRate >= 50 ? "text-yellow-500" : "text-danger-400"}`}>
+                {kpis.completionRate}%
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.totalProduced.toLocaleString("fr-FR")} / {kpis.totalPlanned.toLocaleString("fr-FR")} unites
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Nomenclatures</CardTitle>
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalBOMs}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.activeBOMs} active(s)
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/bom">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Nomenclatures</CardTitle>
+              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalBOMs}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.activeBOMs} active(s)
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Mouvements Stock</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.stockEntryCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Ecritures de stock
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/stock-entries">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Mouvements Stock</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.stockEntryCount}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Ecritures de stock
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Charts Row 1: WO Status + Stock Entry Types */}

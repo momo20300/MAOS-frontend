@@ -95,64 +95,72 @@ export default function QualityDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Inspections</CardTitle>
-            <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalInspections}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.acceptedInspections} acceptees, {kpis.rejectedInspections} rejetees
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/quality-inspections">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Inspections</CardTitle>
+              <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalInspections}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.acceptedInspections} acceptees, {kpis.rejectedInspections} rejetees
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Taux Acceptation</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.acceptanceRate >= 90 ? "text-success-400" : kpis.acceptanceRate >= 70 ? "text-yellow-500" : "text-danger-400"}`}>
-              {kpis.acceptanceRate}%
-            </div>
-            <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
-              <div
-                className={`h-full rounded-full ${kpis.acceptanceRate >= 90 ? "bg-success-400" : kpis.acceptanceRate >= 70 ? "bg-yellow-500" : "bg-danger-400"}`}
-                style={{ width: `${kpis.acceptanceRate}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/quality-inspections">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Taux Acceptation</CardTitle>
+              <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.acceptanceRate >= 90 ? "text-success-400" : kpis.acceptanceRate >= 70 ? "text-yellow-500" : "text-danger-400"}`}>
+                {kpis.acceptanceRate}%
+              </div>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
+                <div
+                  className={`h-full rounded-full ${kpis.acceptanceRate >= 90 ? "bg-success-400" : kpis.acceptanceRate >= 70 ? "bg-yellow-500" : "bg-danger-400"}`}
+                  style={{ width: `${kpis.acceptanceRate}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Non-Conformites</CardTitle>
-            <XCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalNC}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.openNC} ouvertes, {kpis.resolvedNC} resolues
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/non-conformance">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Non-Conformites</CardTitle>
+              <XCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalNC}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.openNC} ouvertes, {kpis.resolvedNC} resolues
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">NC Ouvertes</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.openNC > 0 ? "text-danger-400" : "text-success-400"}`}>
-              {kpis.openNC}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              A traiter
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/non-conformance">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">NC Ouvertes</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.openNC > 0 ? "text-danger-400" : "text-success-400"}`}>
+                {kpis.openNC}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                A traiter
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Charts Row 1: Inspection Status + NC Severity */}

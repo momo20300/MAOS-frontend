@@ -94,73 +94,81 @@ export default function SalesDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">CA du Mois</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success-400">
-              {kpis.thisMonthCA.toLocaleString("fr-FR")} MAD
-            </div>
-            <div className="flex items-center gap-1 mt-1">
-              {kpis.growth >= 0 ? (
-                <TrendingUp className="h-3 w-3 text-success-400" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-danger-400" />
-              )}
-              <span className={`text-xs font-medium ${kpis.growth >= 0 ? "text-success-400" : "text-danger-400"}`}>
-                {kpis.growth > 0 ? "+" : ""}{kpis.growth}%
-              </span>
-              <span className="text-xs text-muted-foreground">vs mois dernier</span>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/invoices">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">CA du Mois</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success-400">
+                {kpis.thisMonthCA.toLocaleString("fr-FR")} MAD
+              </div>
+              <div className="flex items-center gap-1 mt-1">
+                {kpis.growth >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-success-400" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-danger-400" />
+                )}
+                <span className={`text-xs font-medium ${kpis.growth >= 0 ? "text-success-400" : "text-danger-400"}`}>
+                  {kpis.growth > 0 ? "+" : ""}{kpis.growth}%
+                </span>
+                <span className="text-xs text-muted-foreground">vs mois dernier</span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">CA Cumule</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {kpis.yearCA.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.invoiceCount} factures cette annee
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/invoices">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">CA Cumule</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.yearCA.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.invoiceCount} factures cette annee
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Impaye Total</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-danger-400">
-              {kpis.unpaidAmount.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.unpaidCount} factures en attente
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/invoices">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Impaye Total</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-danger-400">
+                {kpis.unpaidAmount.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.unpaidCount} factures en attente
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Facture Moyenne</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {kpis.avgInvoice.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Montant moyen par facture
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/orders">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Facture Moyenne</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.avgInvoice.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Montant moyen par facture
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Monthly Revenue Chart */}
@@ -260,29 +268,30 @@ export default function SalesDashboardPage() {
           <CardContent className="space-y-2 pt-0">
             {overdue.length > 0 ? (
               overdue.slice(0, 8).map((inv) => (
-                <div
-                  key={inv.name}
-                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{inv.name}</span>
-                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                        {inv.daysOverdue}j
-                      </Badge>
+                <Link href="/invoices" key={inv.name} className="block">
+                  <div
+                    className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors cursor-pointer"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{inv.name}</span>
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                          {inv.daysOverdue}j
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{inv.customer}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{inv.customer}</p>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-danger-400">
+                        {inv.amount.toLocaleString("fr-FR")} MAD
+                      </p>
+                      <p className="text-[10px] text-muted-foreground flex items-center justify-end gap-1">
+                        <Calendar className="h-2.5 w-2.5" />
+                        {new Date(inv.dueDate).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-danger-400">
-                      {inv.amount.toLocaleString("fr-FR")} MAD
-                    </p>
-                    <p className="text-[10px] text-muted-foreground flex items-center justify-end gap-1">
-                      <Calendar className="h-2.5 w-2.5" />
-                      {new Date(inv.dueDate).toLocaleDateString("fr-FR")}
-                    </p>
-                  </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="text-center py-8 text-muted-foreground">
@@ -314,28 +323,29 @@ export default function SalesDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {recentOrders.map((order) => (
-                <div
-                  key={order.name}
-                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{order.name}</span>
-                      <Badge variant="secondary" className="rounded-lg text-xs">
-                        {order.status}
-                      </Badge>
+                <Link href="/orders" key={order.name} className="block">
+                  <div
+                    className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/80 transition-colors cursor-pointer"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">{order.name}</span>
+                        <Badge variant="secondary" className="rounded-lg text-xs">
+                          {order.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{order.customer_name}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{order.customer_name}</p>
+                    <div className="text-right">
+                      <p className="text-sm font-bold">
+                        {(order.base_grand_total || 0).toLocaleString("fr-FR")} MAD
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(order.transaction_date).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold">
-                      {(order.base_grand_total || 0).toLocaleString("fr-FR")} MAD
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(order.transaction_date).toLocaleDateString("fr-FR")}
-                    </p>
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>

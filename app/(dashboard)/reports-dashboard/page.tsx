@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getReportsDashboard, ReportsDashboardData } from "@/lib/services/erpnext";
+import { authFetch } from "@/lib/services/auth";
 import {
   FileBarChart, FolderOpen, CheckCircle, AlertTriangle,
   RefreshCw, ArrowRight, TrendingUp, Package,
-  FileText,
+  FileText, Download, Loader2,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -30,6 +31,27 @@ export default function ReportsDashboardPage() {
   const [data, setData] = useState<ReportsDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState<string | null>(null);
+
+  const generateReport = async (reportId: string) => {
+    setGenerating(reportId);
+    try {
+      const res = await authFetch("/api/reports/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId, filters: { startDate: new Date().toISOString().split("T")[0] } }),
+      });
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (e) {
+      console.error("Report generation failed:", e);
+      alert("Erreur lors de la generation du rapport.");
+    } finally {
+      setGenerating(null);
+    }
+  };
 
   const fetchData = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
@@ -271,21 +293,35 @@ export default function ReportsDashboardPage() {
               </CardTitle>
               <Link href="/reports">
                 <Button variant="ghost" size="sm" className="text-xs">
-                  Generer <ArrowRight className="ml-1 h-3 w-3" />
+                  Voir tout <ArrowRight className="ml-1 h-3 w-3" />
                 </Button>
               </Link>
             </div>
           </CardHeader>
           <CardContent>
             <div className="grid gap-2 md:grid-cols-2">
-              {category.reports.map((report) => (
-                <Link key={report.id} href="/reports">
-                  <div className="p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer">
-                    <p className="font-semibold text-sm">{report.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{report.description}</p>
+              {category.reports.map((report) => {
+                const isGen = generating === report.id;
+                return (
+                  <div
+                    key={report.id}
+                    onClick={() => !isGen && generateReport(report.id)}
+                    className="p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm">{report.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{report.description}</p>
+                    </div>
+                    <div className="ml-2 shrink-0">
+                      {isGen ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+                      ) : (
+                        <Download className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

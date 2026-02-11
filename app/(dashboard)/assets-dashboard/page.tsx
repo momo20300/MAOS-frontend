@@ -102,63 +102,71 @@ export default function AssetsDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Actifs</CardTitle>
-            <Landmark className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalAssets}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.submittedAssets} actifs, {kpis.draftAssets} brouillons
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/assets">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Actifs</CardTitle>
+              <Landmark className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalAssets}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.submittedAssets} actifs, {kpis.draftAssets} brouillons
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Valeur Brute</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success-400">
-              {kpis.totalGrossValue.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Cout d&apos;acquisition total
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/assets">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Valeur Brute</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success-400">
+                {kpis.totalGrossValue.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Cout d&apos;acquisition total
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Valeur Nette</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {kpis.totalNetValue.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Apres amortissements
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/assets">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Valeur Nette</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.totalNetValue.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Apres amortissements
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Amortissements</CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-danger-400">
-              {kpis.totalDepreciation.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.scrappedAssets} mis au rebut, {kpis.soldAssets} vendus
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/depreciation">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Amortissements</CardTitle>
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-danger-400">
+                {kpis.totalDepreciation.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.scrappedAssets} mis au rebut, {kpis.soldAssets} vendus
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Charts Row 1: Category + Status */}

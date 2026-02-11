@@ -103,66 +103,74 @@ export default function SupportDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-            <Headphones className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalIssues}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.openIssues} ouverts, {kpis.repliedIssues} repondus
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/tickets">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+              <Headphones className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalIssues}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.openIssues} ouverts, {kpis.repliedIssues} repondus
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Taux Resolution</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.resolutionRate >= 80 ? "text-success-400" : kpis.resolutionRate >= 50 ? "text-yellow-500" : "text-danger-400"}`}>
-              {kpis.resolutionRate}%
-            </div>
-            <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
-              <div
-                className={`h-full rounded-full ${kpis.resolutionRate >= 80 ? "bg-success-400" : kpis.resolutionRate >= 50 ? "bg-yellow-500" : "bg-danger-400"}`}
-                style={{ width: `${kpis.resolutionRate}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/tickets">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Taux Resolution</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.resolutionRate >= 80 ? "text-success-400" : kpis.resolutionRate >= 50 ? "text-yellow-500" : "text-danger-400"}`}>
+                {kpis.resolutionRate}%
+              </div>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
+                <div
+                  className={`h-full rounded-full ${kpis.resolutionRate >= 80 ? "bg-success-400" : kpis.resolutionRate >= 50 ? "bg-yellow-500" : "bg-danger-400"}`}
+                  style={{ width: `${kpis.resolutionRate}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Delai Moyen</CardTitle>
-            <Timer className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.avgResolutionDays <= 2 ? "text-success-400" : kpis.avgResolutionDays <= 7 ? "text-yellow-500" : "text-danger-400"}`}>
-              {kpis.avgResolutionDays}j
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Temps moyen de resolution
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/tickets">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Delai Moyen</CardTitle>
+              <Timer className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.avgResolutionDays <= 2 ? "text-success-400" : kpis.avgResolutionDays <= 7 ? "text-yellow-500" : "text-danger-400"}`}>
+                {kpis.avgResolutionDays}j
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Temps moyen de resolution
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Tickets Ouverts</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.openIssues > 0 ? "text-danger-400" : "text-success-400"}`}>
-              {kpis.openIssues}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              A traiter
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/tickets">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Tickets Ouverts</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.openIssues > 0 ? "text-danger-400" : "text-success-400"}`}>
+                {kpis.openIssues}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                A traiter
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Charts Row 1: Status + Priority */}

@@ -109,64 +109,72 @@ export default function ProjectsDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Projets</CardTitle>
-            <FolderKanban className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalProjects}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.openProjects} en cours, {kpis.completedProjects} termines
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/projects">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Projets</CardTitle>
+              <FolderKanban className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalProjects}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.openProjects} en cours, {kpis.completedProjects} termines
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Completion Moyenne</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.avgCompletion >= 70 ? "text-success-400" : kpis.avgCompletion >= 40 ? "text-yellow-500" : "text-blue-500"}`}>
-              {kpis.avgCompletion}%
-            </div>
-            <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
-              <div
-                className={`h-full rounded-full ${kpis.avgCompletion >= 70 ? "bg-success-400" : kpis.avgCompletion >= 40 ? "bg-yellow-500" : "bg-blue-500"}`}
-                style={{ width: `${kpis.avgCompletion}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/projects">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Completion Moyenne</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.avgCompletion >= 70 ? "text-success-400" : kpis.avgCompletion >= 40 ? "text-yellow-500" : "text-blue-500"}`}>
+                {kpis.avgCompletion}%
+              </div>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
+                <div
+                  className={`h-full rounded-full ${kpis.avgCompletion >= 70 ? "bg-success-400" : kpis.avgCompletion >= 40 ? "bg-yellow-500" : "bg-blue-500"}`}
+                  style={{ width: `${kpis.avgCompletion}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Taches</CardTitle>
-            <ListTodo className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalTasks}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.openTasks} ouvertes, {kpis.workingTasks} en cours
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/tasks">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Taches</CardTitle>
+              <ListTodo className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalTasks}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.openTasks} ouvertes, {kpis.workingTasks} en cours
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">En Retard</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.overdueProjects > 0 ? "text-danger-400" : "text-success-400"}`}>
-              {kpis.overdueProjects}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Projet(s) en retard
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/projects">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">En Retard</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.overdueProjects > 0 ? "text-danger-400" : "text-success-400"}`}>
+                {kpis.overdueProjects}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Projet(s) en retard
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Budget Row */}

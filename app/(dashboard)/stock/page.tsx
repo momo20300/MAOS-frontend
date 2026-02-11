@@ -102,63 +102,71 @@ export default function StockDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Valeur Totale</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {kpis.totalStockValue.toLocaleString("fr-FR")} MAD
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.totalItems} article(s) stockables
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/products">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Valeur Totale</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {kpis.totalStockValue.toLocaleString("fr-FR")} MAD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.totalItems} article(s) stockables
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Articles Critiques</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-danger-400" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.criticalCount > 0 ? "text-danger-400" : "text-success-400"}`}>
-              {kpis.criticalCount}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              En rupture de stock
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/products">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Articles Critiques</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-danger-400" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.criticalCount > 0 ? "text-danger-400" : "text-success-400"}`}>
+                {kpis.criticalCount}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                En rupture de stock
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Stock Bas</CardTitle>
-            <TrendingUp className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.lowStockCount > 0 ? "text-yellow-600" : "text-success-400"}`}>
-              {kpis.lowStockCount}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Sous seuil de reserve
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/products">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Stock Bas</CardTitle>
+              <TrendingUp className="h-4 w-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.lowStockCount > 0 ? "text-yellow-600" : "text-success-400"}`}>
+                {kpis.lowStockCount}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Sous seuil de reserve
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Entrepots</CardTitle>
-            <Warehouse className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.activeWarehouses}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.entriesThisMonth} mouvement(s) ce mois
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/warehouses">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Entrepots</CardTitle>
+              <Warehouse className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.activeWarehouses}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.entriesThisMonth} mouvement(s) ce mois
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Critical Items Alert */}
@@ -329,23 +337,24 @@ export default function StockDashboardPage() {
           <CardContent className="space-y-2 pt-0">
             {criticalItems.length > 0 ? (
               criticalItems.map((item) => (
-                <div
-                  key={item.code}
-                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {item.code} - {item.group}
-                    </p>
+                <Link href="/products" key={item.code} className="block">
+                  <div
+                    className="flex items-center justify-between p-2 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.code} - {item.group}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{item.warehouse}</span>
+                      <Badge variant="destructive" className="text-xs">
+                        {item.qty}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{item.warehouse}</span>
-                    <Badge variant="destructive" className="text-xs">
-                      {item.qty}
-                    </Badge>
-                  </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="text-center py-8 text-muted-foreground">
@@ -375,21 +384,22 @@ export default function StockDashboardPage() {
           <CardContent className="space-y-2 pt-0">
             {lowStockItems.length > 0 ? (
               lowStockItems.map((item) => (
-                <div
-                  key={item.code}
-                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.code}</p>
+                <Link href="/products" key={item.code} className="block">
+                  <div
+                    className="flex items-center justify-between p-2 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{item.code}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{item.warehouse}</span>
+                      <Badge className="text-xs bg-yellow-500">
+                        {item.qty} / {item.reserved}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{item.warehouse}</span>
-                    <Badge className="text-xs bg-yellow-500">
-                      {item.qty} / {item.reserved}
-                    </Badge>
-                  </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="text-center py-8 text-muted-foreground">

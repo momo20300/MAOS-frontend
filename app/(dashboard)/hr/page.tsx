@@ -93,59 +93,67 @@ export default function HrDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Employes</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalEmployees}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis.departmentCount} departement(s)
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/employees">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Employes</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpis.totalEmployees}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {kpis.departmentCount} departement(s)
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Actifs</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success-400">{kpis.activeEmployees}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Retention: {retentionRate}%
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/employees">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Actifs</CardTitle>
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success-400">{kpis.activeEmployees}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Retention: {retentionRate}%
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Departs</CardTitle>
-            <UserX className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${kpis.leftEmployees > 0 ? "text-danger-400" : ""}`}>
-              {kpis.leftEmployees}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Employe(s) ayant quitte
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/employees">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Departs</CardTitle>
+              <UserX className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${kpis.leftEmployees > 0 ? "text-danger-400" : ""}`}>
+                {kpis.leftEmployees}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Employe(s) ayant quitte
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Recrutements</CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{kpis.newHires}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Nouveaux cette annee
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/employees">
+          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Recrutements</CardTitle>
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{kpis.newHires}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Nouveaux cette annee
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Charts Row 1: Departments + Gender */}
@@ -328,18 +336,20 @@ export default function HrDashboardPage() {
                 </thead>
                 <tbody>
                   {employeeList.map((emp) => (
-                    <tr key={emp.name} className="border-b hover:bg-muted/50 transition-colors">
-                      <td className="py-2 px-3 font-mono text-xs">{emp.name}</td>
-                      <td className="py-2 px-3 font-semibold">{emp.employee_name}</td>
-                      <td className="py-2 px-3">{emp.designation || "—"}</td>
-                      <td className="py-2 px-3">{emp.department || "—"}</td>
-                      <td className="py-2 px-3">{emp.gender || "—"}</td>
-                      <td className="py-2 px-3">
-                        {emp.date_of_joining
-                          ? new Date(emp.date_of_joining).toLocaleDateString("fr-FR")
-                          : "—"}
-                      </td>
-                    </tr>
+                    <Link href="/employees" key={emp.name} className="contents">
+                      <tr className="border-b hover:bg-muted/50 transition-colors cursor-pointer">
+                        <td className="py-2 px-3 font-mono text-xs">{emp.name}</td>
+                        <td className="py-2 px-3 font-semibold">{emp.employee_name}</td>
+                        <td className="py-2 px-3">{emp.designation || "—"}</td>
+                        <td className="py-2 px-3">{emp.department || "—"}</td>
+                        <td className="py-2 px-3">{emp.gender || "—"}</td>
+                        <td className="py-2 px-3">
+                          {emp.date_of_joining
+                            ? new Date(emp.date_of_joining).toLocaleDateString("fr-FR")
+                            : "—"}
+                        </td>
+                      </tr>
+                    </Link>
                   ))}
                 </tbody>
               </table>
