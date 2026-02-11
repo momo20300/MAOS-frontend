@@ -351,7 +351,7 @@ export default function ProductAnalysisPage() {
       const res = await authFetch("/api/reports/product-analysis/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemCode }),
+        body: JSON.stringify({ itemCode, startDate, endDate }),
       });
       if (!res.ok) throw new Error(`Erreur ${res.status}`);
       const blob = await res.blob();
