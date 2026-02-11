@@ -1033,3 +1033,28 @@ export const printDocument = <T>(
   printWindow.document.write(tableHtml);
   printWindow.document.close();
 };
+
+// ============================================================================
+// PDF Document Print (Professional PDF via backend)
+// ============================================================================
+
+export const printDocumentPDF = async (doctype: string, name: string) => {
+  try {
+    const response = await authFetch('/api/reports/document-print', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doctype, name }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => null);
+      throw new Error(err?.error || 'Erreur lors de la generation du PDF');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  } catch (error) {
+    console.error('PDF print error:', error);
+    throw error;
+  }
+};

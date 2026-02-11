@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   getInvoices, getCustomers, getItems, createInvoice,
-  exportToCSV, printDocument
+  exportToCSV, printDocument, printDocumentPDF
 } from "@/lib/services/erpnext";
 import { OrderForm } from "@/components/forms";
 import {
@@ -334,15 +334,30 @@ export default function InvoicesPage() {
                     <span>Echeance: {new Date(invoice.due_date).toLocaleDateString("fr-FR")}</span>
                   </div>
                 </div>
-                <div className="text-right space-y-1">
-                  <div className="text-lg font-bold">
-                    {(invoice.grand_total || 0).toLocaleString()} MAD
-                  </div>
-                  {invoice.outstanding_amount > 0 && (
-                    <div className="text-sm text-danger-400">
-                      Reste: {invoice.outstanding_amount.toLocaleString()} MAD
+                <div className="flex items-center gap-3">
+                  <div className="text-right space-y-1">
+                    <div className="text-lg font-bold">
+                      {(invoice.grand_total || 0).toLocaleString()} MAD
                     </div>
-                  )}
+                    {invoice.outstanding_amount > 0 && (
+                      <div className="text-sm text-danger-400">
+                        Reste: {invoice.outstanding_amount.toLocaleString()} MAD
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-lg"
+                    title="Imprimer PDF"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      printDocumentPDF('Sales Invoice', invoice.name)
+                        .catch(() => showToast("Erreur lors de la generation du PDF", "error"));
+                    }}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             ))}
