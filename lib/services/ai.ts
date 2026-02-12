@@ -97,8 +97,8 @@ export function fileToBase64(file: File): Promise<string> {
  */
 export interface StreamingCallbacks {
   onTextChunk: (text: string) => void;
-  onSentenceComplete: (sentence: string, index: number) => void;
-  onAudioReady: (audioBase64: string, index: number) => void;
+  onSentenceComplete?: (sentence: string, index: number) => void;
+  onAudioReady?: (audioBase64: string, index: number) => void;
   onComplete: (fullText: string, processingTime: number, audioCount?: number) => void;
   onError: (error: string) => void;
   onPdfReady?: (pdfData: string, filename: string, reportTitle: string) => void;
@@ -213,10 +213,10 @@ function handleSSEEvent(
       callbacks.onTextChunk(data.chunk);
       break;
     case 'sentence':
-      callbacks.onSentenceComplete(data.text, data.index);
+      callbacks.onSentenceComplete?.(data.text, data.index);
       break;
     case 'audio':
-      callbacks.onAudioReady(data.data, data.index);
+      callbacks.onAudioReady?.(data.data, data.index);
       break;
     case 'complete':
       callbacks.onComplete(data.fullText, data.processingTime || 0, data.audioCount);
