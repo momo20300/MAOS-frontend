@@ -219,9 +219,9 @@ export default function SalesDashboardPage() {
           <CardContent className="space-y-2 pt-0">
             {topClients.length > 0 ? (
               topClients.map((client, index) => (
+                <Link key={client.name} href="/clients" className="block">
                 <div
-                  key={client.name}
-                  className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+                  className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors cursor-pointer"
                 >
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                     index === 0 ? "bg-yellow-500/20 text-yellow-600" :
@@ -241,6 +241,7 @@ export default function SalesDashboardPage() {
                     </p>
                   </div>
                 </div>
+                </Link>
               ))
             ) : (
               <div className="text-center py-4 text-muted-foreground">
