@@ -31,6 +31,44 @@ export default function MaosTalk() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // TTS audio playback queue
+  const audioQueueRef = useRef<string[]>([]);
+  const isPlayingRef = useRef(false);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playNextAudio = useCallback(() => {
+    if (isPlayingRef.current || audioQueueRef.current.length === 0) return;
+    const audioData = audioQueueRef.current.shift();
+    if (!audioData) return;
+    isPlayingRef.current = true;
+    const audio = new Audio(`data:audio/mp3;base64,${audioData}`);
+    currentAudioRef.current = audio;
+    audio.onended = () => {
+      isPlayingRef.current = false;
+      currentAudioRef.current = null;
+      playNextAudio();
+    };
+    audio.onerror = () => {
+      isPlayingRef.current = false;
+      currentAudioRef.current = null;
+      playNextAudio();
+    };
+    audio.play().catch(() => {
+      isPlayingRef.current = false;
+      currentAudioRef.current = null;
+      playNextAudio();
+    });
+  }, []);
+
+  const stopAudio = useCallback(() => {
+    audioQueueRef.current = [];
+    isPlayingRef.current = false;
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+  }, []);
+
   // Debounced auto-hide: only hides when input is empty AND unfocused for 5s
   const resetHideTimer = useCallback(() => {
     if (hideTimerRef.current) {
@@ -216,6 +254,7 @@ export default function MaosTalk() {
   const handleSendStreaming = async (textToSend: string) => {
     if (!textToSend.trim() || isLoading) return;
 
+    stopAudio(); // Stop any playing audio from previous response
     setMessage("");
 
     const userMessage: Message = {
@@ -249,6 +288,11 @@ export default function MaosTalk() {
           }
           return updated;
         });
+      },
+
+      onAudioReady: (audioBase64: string) => {
+        audioQueueRef.current.push(audioBase64);
+        playNextAudio();
       },
 
       onPdfReady: (pdfData: string, filename: string, _reportTitle: string) => {
@@ -297,7 +341,7 @@ export default function MaosTalk() {
     };
 
     try {
-      await sendMessageStreamingSSE(textToSend.trim(), callbacks, { wantAudio: false, sessionId });
+      await sendMessageStreamingSSE(textToSend.trim(), callbacks, { wantAudio: true, sessionId });
     } catch {
       setIsLoading(false);
     }
