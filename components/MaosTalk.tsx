@@ -25,48 +25,43 @@ export default function MaosTalk() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [useStreaming, setUseStreaming] = useState(true);
   const [voiceMode, setVoiceMode] = useState(false);
-  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
   const [sessionId] = useState(() => `maos-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset activity timer
-  const resetActivityTimer = useCallback(() => {
-    setLastActivityTime(Date.now());
-  }, []);
-
-  // Auto-hide after 10 seconds of inactivity
-  useEffect(() => {
-    if (isMinimized || isLoading) {
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current);
-        inactivityTimerRef.current = null;
-      }
-      return;
+  // Debounced auto-hide: only hides when input is empty AND unfocused for 5s
+  const resetHideTimer = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
     }
-
-    inactivityTimerRef.current = setTimeout(() => {
-      const timeSinceLastActivity = Date.now() - lastActivityTime;
-      if (timeSinceLastActivity >= 10000) {
+    if (isMinimized) return;
+    hideTimerRef.current = setTimeout(() => {
+      // NEVER hide if textarea has text or focus
+      const hasText = textareaRef.current ? textareaRef.current.value.length > 0 : false;
+      const hasFocus = document.activeElement === textareaRef.current;
+      if (!hasText && !hasFocus) {
         setIsMinimized(true);
       }
-    }, 10000);
+    }, 5000);
+  }, [isMinimized]);
 
-    return () => {
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current);
-      }
-    };
-  }, [lastActivityTime, isMinimized, isLoading]);
-
-  // Reset activity when typing
+  // Cancel hide timer when loading (keep bar visible)
   useEffect(() => {
-    if (message) {
-      resetActivityTimer();
+    if (isLoading && hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
     }
-  }, [message, resetActivityTimer]);
+  }, [isLoading]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -422,7 +417,7 @@ export default function MaosTalk() {
       {/* MODE MINIMIS\u00c9 - Juste un bouton flottant */}
       {isMinimized && (
         <button
-          onClick={() => { setIsMinimized(false); resetActivityTimer(); }}
+          onClick={() => { setIsMinimized(false); resetHideTimer(); }}
           className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center shadow-2xl z-50 hover:scale-110 transition-transform"
           title="Ouvrir MAOS Chat"
         >
@@ -566,9 +561,17 @@ export default function MaosTalk() {
                   <textarea
                     ref={textareaRef}
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => { setMessage(e.target.value); resetHideTimer(); }}
                     onKeyDown={handleKeyDown}
-                    onFocus={() => { setIsExpanded(true); resetActivityTimer(); }}
+                    onFocus={() => {
+                      setIsExpanded(true);
+                      // Cancel timer entirely — never hide while focused
+                      if (hideTimerRef.current) { clearTimeout(hideTimerRef.current); hideTimerRef.current = null; }
+                    }}
+                    onBlur={() => {
+                      // Only start hide timer if input is empty
+                      if (!message.trim()) resetHideTimer();
+                    }}
                     placeholder="Parle \u00e0 MAOS..."
                     disabled={isLoading}
                     className="w-full resize-none rounded-xl border bg-background px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-success-400 transition-all overflow-hidden scrollbar-hide disabled:opacity-50"
@@ -598,7 +601,7 @@ export default function MaosTalk() {
                 <Button
                   size="icon"
                   variant="outline"
-                  onClick={() => { setVoiceMode(true); resetActivityTimer(); }}
+                  onClick={() => { setVoiceMode(true); resetHideTimer(); }}
                   disabled={isLoading}
                   className="h-10 w-10 rounded-lg flex-shrink-0 mb-2 hover:bg-success-50 hover:border-success-400"
                   title="Agent vocal MAOS"
@@ -639,7 +642,7 @@ export default function MaosTalk() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => { setIsExpanded(false); resetActivityTimer(); }}
+                      onClick={() => { setIsExpanded(false); resetHideTimer(); }}
                       className="h-5 px-2 text-xs text-muted-foreground hover:text-primary"
                     >
                       <Minimize2 className="w-3 h-3 mr-1" />
@@ -649,7 +652,7 @@ export default function MaosTalk() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => { setIsExpanded(true); resetActivityTimer(); }}
+                      onClick={() => { setIsExpanded(true); resetHideTimer(); }}
                       className="h-5 px-2 text-xs text-success-400"
                     >
                       <Maximize2 className="w-3 h-3 mr-1" />
