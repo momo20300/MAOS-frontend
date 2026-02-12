@@ -632,6 +632,17 @@ export default function MaosTalk() {
         }
       },
 
+      onPdfReady: (pdfData: string, filename: string, _reportTitle: string) => {
+        setMessages(msgs => {
+          const updated = [...msgs];
+          const last = updated[updated.length - 1];
+          if (last?.role === 'assistant') {
+            updated[updated.length - 1] = { ...last, pdf: { data: pdfData, filename } };
+          }
+          return updated;
+        });
+      },
+
       onComplete: (fullText: string, processingTime: number, audioCount?: number) => {
         streamingCompleteRef.current = true;
         setIsLoading(false);

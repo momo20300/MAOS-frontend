@@ -339,7 +339,7 @@ export default function SupportDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {recentIssues.map((issue) => (
-                <Link key={issue.name} href="/support-dashboard" className="block">
+                <Link key={issue.name} href="/tickets" className="block">
                 <div
                   className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                 >

@@ -384,7 +384,7 @@ export default function ProjectsDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {projectList.map((project) => (
-                <Link key={project.name} href="/projects-dashboard" className="block">
+                <Link key={project.name} href="/projects" className="block">
                 <div
                   className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/80 transition-colors cursor-pointer"
                 >

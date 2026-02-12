@@ -327,7 +327,7 @@ export default function AssetsDashboardPage() {
                 </thead>
                 <tbody>
                   {topAssets.map((asset) => (
-                    <Link key={asset.name} href="/assets-dashboard" className="contents">
+                    <Link key={asset.name} href="/assets" className="contents">
                     <tr className="border-b hover:bg-muted/50 transition-colors cursor-pointer">
                       <td className="py-2 px-3 font-mono text-xs">{asset.name}</td>
                       <td className="py-2 px-3 font-semibold">{asset.asset_name}</td>
@@ -368,7 +368,7 @@ export default function AssetsDashboardPage() {
           <CardContent>
             <div className="space-y-2">
               {recentAssets.map((asset) => (
-                <Link key={asset.name} href="/assets-dashboard" className="block">
+                <Link key={asset.name} href="/assets" className="block">
                 <div
                   className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                 >

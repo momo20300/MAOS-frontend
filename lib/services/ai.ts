@@ -101,6 +101,7 @@ export interface StreamingCallbacks {
   onAudioReady: (audioBase64: string, index: number) => void;
   onComplete: (fullText: string, processingTime: number, audioCount?: number) => void;
   onError: (error: string) => void;
+  onPdfReady?: (pdfData: string, filename: string, reportTitle: string) => void;
 }
 
 /**
@@ -219,6 +220,11 @@ function handleSSEEvent(
       break;
     case 'complete':
       callbacks.onComplete(data.fullText, data.processingTime || 0, data.audioCount);
+      break;
+    case 'pdf_ready':
+      if (callbacks.onPdfReady) {
+        callbacks.onPdfReady(data.data, data.filename, data.reportTitle);
+      }
       break;
     case 'error':
       callbacks.onError(data.message);
