@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Sparkles, Loader2, Mic, MicOff, Upload, X, FileText, Image, File, Volume2, VolumeX, Download, Minimize2, Maximize2, MessageSquare, Zap } from "lucide-react";
+import { Send, Sparkles, Loader2, Mic, MicOff, Upload, X, FileText, Image, File, Volume2, VolumeX, Download, Minimize2, Maximize2, MessageSquare, Zap, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sendMessageToAI, sendMessageStreamingSSE, Message, fileToBase64, AIResponse, AttachedFile, StreamingCallbacks } from "@/lib/services/ai";
+import dynamic from "next/dynamic";
+
+const VoiceAgent = dynamic(() => import("./VoiceAgent"), { ssr: false });
 
 interface UploadedFile {
   file: File;
@@ -26,6 +29,7 @@ export default function MaosTalk() {
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [useStreaming, setUseStreaming] = useState(true); // Enable streaming by default for faster responses
   const [streamingText, setStreamingText] = useState(""); // Current streaming text
+  const [voiceMode, setVoiceMode] = useState(false); // GPT-Realtime voice mode
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
   const [sessionId] = useState(() => `maos-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
   const audioQueueRef = useRef<{ audio: HTMLAudioElement; index: number }[]>([]);
@@ -856,6 +860,11 @@ export default function MaosTalk() {
 
   return (
     <>
+      {/* GPT-Realtime Voice Agent overlay */}
+      {voiceMode && (
+        <VoiceAgent onClose={() => setVoiceMode(false)} />
+      )}
+
       <input
         ref={fileInputRef}
         type="file"
@@ -1033,6 +1042,18 @@ export default function MaosTalk() {
                   ) : (
                     <Volume2 className={`h-5 w-5 ${ttsEnabled ? 'text-white' : 'text-success-400'}`} />
                   )}
+                </Button>
+
+                {/* Bouton Agent Vocal (GPT-Realtime) */}
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => { setVoiceMode(true); resetActivityTimer(); }}
+                  disabled={isLoading}
+                  className="h-10 w-10 rounded-lg flex-shrink-0 mb-2 hover:bg-blue-50 hover:border-blue-400 dark:hover:bg-blue-900/30"
+                  title="Agent vocal MAOS"
+                >
+                  <Phone className="h-5 w-5 text-blue-500" />
                 </Button>
 
                 {/* Bouton Upload */}
