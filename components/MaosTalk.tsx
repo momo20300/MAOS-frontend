@@ -1,12 +1,55 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { Send, Sparkles, Loader2, Mic, Upload, X, FileText, Image, File, Download, Minimize2, Maximize2, MessageSquare, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sendMessageToAI, sendMessageStreamingSSE, Message, fileToBase64, AttachedFile, StreamingCallbacks } from "@/lib/services/ai";
 import dynamic from "next/dynamic";
 
 const VoiceAgent = dynamic(() => import("./VoiceAgent"), { ssr: false });
+
+// Memoized message component — prevents re-rendering unchanged messages during streaming
+const ChatBubble = memo(function ChatBubble({ msg, onDownloadPDF }: { msg: Message; onDownloadPDF: (data: string, filename: string) => void }) {
+  return (
+    <div className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+      {msg.role === "assistant" && (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-4 h-4 text-white" />
+        </div>
+      )}
+      <div
+        className={`max-w-[80%] rounded-2xl px-4 py-2 ${msg.role === "user" ? "bg-success-400 text-white" : "bg-muted"}`}
+        dir={msg.direction || 'ltr'}
+      >
+        {msg.files && msg.files.length > 0 && (
+          <div className="mb-2 space-y-1">
+            {msg.files.map((file, fileIdx) => (
+              <div
+                key={fileIdx}
+                className={`flex items-center gap-2 text-xs px-2 py-1 rounded ${msg.role === "user" ? "bg-success-500/50" : "bg-muted-foreground/10"}`}
+              >
+                <FileText className="w-4 h-4" />
+                <span className="font-medium">{file.name}</span>
+                <span className="opacity-70">({Math.round(file.size / 1024)} KB)</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className={`text-sm whitespace-pre-wrap ${msg.direction === 'rtl' ? 'text-right' : ''}`}>{msg.content}</p>
+        {msg.pdf && msg.pdf.data && (
+          <Button
+            onClick={() => onDownloadPDF(msg.pdf!.data, msg.pdf!.filename)}
+            className="mt-3 bg-success-400 hover:bg-success-500 text-white"
+            size="sm"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            T\u00e9l\u00e9charger le PDF
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+});
 
 interface UploadedFile {
   file: File;
@@ -31,10 +74,14 @@ export default function MaosTalk() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // TTS audio playback queue
+  // TTS audio playback queue (max 50 chunks to prevent memory leak)
   const audioQueueRef = useRef<string[]>([]);
   const isPlayingRef = useRef(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Streaming optimization: buffer chunks and flush every 50ms instead of per-chunk
+  const streamBufferRef = useRef("");
+  const streamFlushTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const playNextAudio = useCallback(() => {
     if (isPlayingRef.current || audioQueueRef.current.length === 0) return;
@@ -69,6 +116,25 @@ export default function MaosTalk() {
     }
   }, []);
 
+  // Flush buffered streaming text to state (called every 50ms during streaming)
+  const flushStreamBuffer = useCallback(() => {
+    const buffered = streamBufferRef.current;
+    if (!buffered) return;
+    streamBufferRef.current = "";
+    setMessages(msgs => {
+      const updated = [...msgs];
+      const lastIndex = updated.length - 1;
+      const lastMsg = updated[lastIndex];
+      if (lastMsg && lastMsg.role === "assistant") {
+        updated[lastIndex] = {
+          ...lastMsg,
+          content: (lastMsg.content || "") + buffered,
+        };
+      }
+      return updated;
+    });
+  }, []);
+
   // Debounced auto-hide: only hides when input is empty AND unfocused for 5s
   const resetHideTimer = useCallback(() => {
     if (hideTimerRef.current) {
@@ -98,6 +164,7 @@ export default function MaosTalk() {
   useEffect(() => {
     return () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      if (streamFlushTimerRef.current) clearTimeout(streamFlushTimerRef.current);
     };
   }, []);
 
@@ -109,7 +176,12 @@ export default function MaosTalk() {
     }
   }, [message]);
 
+  // Throttled scroll — scroll at most every 200ms during streaming to avoid jank
+  const lastScrollRef = useRef(0);
   useEffect(() => {
+    const now = Date.now();
+    if (now - lastScrollRef.current < 200) return;
+    lastScrollRef.current = now;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -276,22 +348,21 @@ export default function MaosTalk() {
 
     const callbacks: StreamingCallbacks = {
       onTextChunk: (chunk: string) => {
-        setMessages(msgs => {
-          const updated = [...msgs];
-          const lastIndex = updated.length - 1;
-          const lastMsg = updated[lastIndex];
-          if (lastMsg && lastMsg.role === "assistant") {
-            updated[lastIndex] = {
-              ...lastMsg,
-              content: (lastMsg.content || "") + chunk,
-            };
-          }
-          return updated;
-        });
+        // Buffer chunks and flush every 50ms to avoid 500+ re-renders
+        streamBufferRef.current += chunk;
+        if (!streamFlushTimerRef.current) {
+          streamFlushTimerRef.current = setTimeout(() => {
+            streamFlushTimerRef.current = null;
+            flushStreamBuffer();
+          }, 50);
+        }
       },
 
       onAudioReady: (audioBase64: string) => {
-        audioQueueRef.current.push(audioBase64);
+        // Cap audio queue at 50 items to prevent memory leak
+        if (audioQueueRef.current.length < 50) {
+          audioQueueRef.current.push(audioBase64);
+        }
         playNextAudio();
       },
 
@@ -307,8 +378,14 @@ export default function MaosTalk() {
       },
 
       onComplete: (fullText: string) => {
+        // Clear any pending flush timer
+        if (streamFlushTimerRef.current) {
+          clearTimeout(streamFlushTimerRef.current);
+          streamFlushTimerRef.current = null;
+        }
+        streamBufferRef.current = "";
         setIsLoading(false);
-    
+
         setMessages(msgs => {
           const updated = [...msgs];
           const lastIndex = updated.length - 1;
@@ -324,6 +401,12 @@ export default function MaosTalk() {
       },
 
       onError: () => {
+        // Clear streaming buffer on error
+        if (streamFlushTimerRef.current) {
+          clearTimeout(streamFlushTimerRef.current);
+          streamFlushTimerRef.current = null;
+        }
+        streamBufferRef.current = "";
         setIsLoading(false);
         setMessages(msgs => {
           const updated = [...msgs];
@@ -487,54 +570,7 @@ export default function MaosTalk() {
               </div>
               <div className="space-y-4">
                 {messages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    {msg.role === "assistant" && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2 ${msg.role === "user"
-                        ? "bg-success-400 text-white"
-                        : "bg-muted"
-                        }`}
-                      dir={msg.direction || 'ltr'}
-                    >
-                      {/* Fichiers attach\u00e9s - affich\u00e9s DANS la bulle */}
-                      {msg.files && msg.files.length > 0 && (
-                        <div className="mb-2 space-y-1">
-                          {msg.files.map((file, fileIdx) => (
-                            <div
-                              key={fileIdx}
-                              className={`flex items-center gap-2 text-xs px-2 py-1 rounded ${msg.role === "user"
-                                ? "bg-success-500/50"
-                                : "bg-muted-foreground/10"
-                                }`}
-                            >
-                              <FileText className="w-4 h-4" />
-                              <span className="font-medium">{file.name}</span>
-                              <span className="opacity-70">({Math.round(file.size / 1024)} KB)</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <p className={`text-sm whitespace-pre-wrap ${msg.direction === 'rtl' ? 'text-right' : ''}`}>{msg.content}</p>
-                      {/* PDF Download Button */}
-                      {msg.pdf && msg.pdf.data && (
-                        <Button
-                          onClick={() => downloadPDF(msg.pdf!.data, msg.pdf!.filename)}
-                          className="mt-3 bg-success-400 hover:bg-success-500 text-white"
-                          size="sm"
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          T\u00e9l\u00e9charger le PDF
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                  <ChatBubble key={idx} msg={msg} onDownloadPDF={downloadPDF} />
                 ))}
                 {isLoading && (
                   <div className="flex gap-3 justify-start">
