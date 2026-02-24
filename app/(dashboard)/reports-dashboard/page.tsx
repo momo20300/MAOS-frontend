@@ -211,73 +211,86 @@ export default function ReportsDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Charts: Category Distribution */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="rounded-2xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileBarChart className="h-4 w-4" />
-              Rapports par Categorie
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[280px] w-full" style={{ minWidth: 0 }}>
-              {categoryChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                  <PieChart>
-                    <Pie
-                      data={categoryChartData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={90}
-                      dataKey="count"
-                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                    >
-                      {categoryChartData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  Aucune categorie
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Charts: Category Distribution — only shown when data is available */}
+      {kpis.hasData ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="rounded-2xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileBarChart className="h-4 w-4" />
+                Rapports par Categorie
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[280px] w-full" style={{ minWidth: 0 }}>
+                {categoryChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <PieChart>
+                      <Pie
+                        data={categoryChartData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={90}
+                        dataKey="count"
+                        label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                      >
+                        {categoryChartData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Aucune categorie
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
+          <Card className="rounded-2xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FolderOpen className="h-4 w-4" />
+                Volume par Categorie
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[280px] w-full" style={{ minWidth: 0 }}>
+                {categoryChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <BarChart data={categoryChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                      <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
+                      <Tooltip />
+                      <Bar dataKey="count" name="Rapports" fill="#4f9cf7" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Aucune donnee
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
         <Card className="rounded-2xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FolderOpen className="h-4 w-4" />
-              Volume par Categorie
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[280px] w-full" style={{ minWidth: 0 }}>
-              {categoryChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                  <BarChart data={categoryChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                    <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
-                    <Tooltip />
-                    <Bar dataKey="count" name="Rapports" fill="#4f9cf7" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  Aucune donnee
-                </div>
-              )}
-            </div>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <AlertTriangle className="h-10 w-10 text-amber-500 mb-3" />
+            <p className="text-lg font-semibold">Aucune donnee disponible</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-md">
+              Connectez vos donnees pour visualiser les graphiques et generer des rapports.
+              Les {kpis.totalReports} modeles de rapports sont prets a etre utilises.
+            </p>
           </CardContent>
         </Card>
-      </div>
+      )}
 
       {/* Report Categories with reports list */}
       {categories.map((category) => (
