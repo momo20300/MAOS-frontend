@@ -272,12 +272,12 @@ export default function DashboardPage() {
       {/* Row 3: Module Summary Grid */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Modules</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="flex flex-nowrap overflow-x-auto gap-4 pb-2 scrollbar-thin">
           {MODULE_CARDS.map((mod) => {
             const Icon = mod.icon;
             const metric = data ? getModuleMetric(data, mod.key) : "...";
             return (
-              <Link key={mod.key} href={mod.link}>
+              <Link key={mod.key} href={mod.link} className="shrink-0" style={{ minWidth: "200px" }}>
                 <Card className="py-3 px-4 hover:shadow-md transition-shadow cursor-pointer group h-full">
                   <div className="flex items-start justify-between">
                     <div className={`p-2 rounded-lg ${mod.bg}`}>
