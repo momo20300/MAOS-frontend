@@ -269,33 +269,7 @@ export default function DashboardPage() {
       </Card>
       </Link>
 
-      {/* Row 3: Module Summary Grid */}
-      <div>
-        <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Modules</h3>
-        <div className="flex flex-nowrap gap-2">
-          {MODULE_CARDS.map((mod) => {
-            const Icon = mod.icon;
-            const metric = data ? getModuleMetric(data, mod.key) : "...";
-            return (
-              <Link key={mod.key} href={mod.link} className="flex-1 min-w-0">
-                <Card className="py-2 px-2.5 hover:shadow-md transition-shadow cursor-pointer group h-full">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-lg ${mod.bg} shrink-0`}>
-                      <Icon className={`h-3.5 w-3.5 ${mod.color}`} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold truncate">{mod.label}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{metric}</p>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Row 4: Top Products + MAOS Insights */}
+      {/* Row 3: Top Products + MAOS Insights */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-3">
@@ -380,6 +354,32 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Bottom: Module Summary Grid */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Modules</h3>
+        <div className="flex flex-nowrap gap-2">
+          {MODULE_CARDS.map((mod) => {
+            const Icon = mod.icon;
+            const metric = data ? getModuleMetric(data, mod.key) : "...";
+            return (
+              <Link key={mod.key} href={mod.link} className="flex-1 min-w-0">
+                <Card className="py-2 px-2.5 hover:shadow-md transition-shadow cursor-pointer group h-full">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg ${mod.bg} shrink-0`}>
+                      <Icon className={`h-3.5 w-3.5 ${mod.color}`} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate">{mod.label}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{metric}</p>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
