@@ -200,82 +200,53 @@ export default function DashboardFinancesPage() {
                 </CardContent>
             </Card>
 
-            {/* PRO Feature: Profit Trend Analysis */}
-            <PackGate feature="trendAnalysis">
-                <Card className="border-blue-200 bg-blue-50/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <LineChart className="h-5 w-5 text-blue-600" />
-                            Analyse de Rentabilité (90 jours)
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="p-6 bg-white rounded-lg text-center">
-                            <p className="text-2xl font-bold text-blue-600 mb-2">Marge nette: +2.3%</p>
-                            <p className="text-sm text-gray-600">
-                                Amélioration continue depuis 3 mois
-                            </p>
-                            <div className="grid grid-cols-3 gap-4 mt-4">
-                                <div>
-                                    <p className="text-xs text-gray-500">Janvier</p>
-                                    <p className="font-semibold">36.2%</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500">Février</p>
-                                    <p className="font-semibold">37.8%</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500">Mars (proj.)</p>
-                                    <p className="font-semibold text-green-600">38.5%</p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
-
-            {/* PRO_PLUS Feature: Cashflow Forecasting */}
-            <PackGate feature="aiPredictions">
-                <Card className="border-green-200 bg-green-50/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-green-600" />
-                            Prévisions de Trésorerie (6 mois)
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="p-4 bg-white rounded-lg text-center">
-                                    <p className="text-sm text-gray-600">Mars 2026</p>
-                                    <p className="text-2xl font-bold text-green-600">712K Dirhams</p>
-                                    <p className="text-xs text-gray-500">±45K</p>
-                                </div>
-                                <div className="p-4 bg-white rounded-lg text-center">
-                                    <p className="text-sm text-gray-600">Avril 2026</p>
-                                    <p className="text-2xl font-bold text-green-600">758K Dirhams</p>
-                                    <p className="text-xs text-gray-500">±50K</p>
-                                </div>
-                                <div className="p-4 bg-white rounded-lg text-center">
-                                    <p className="text-sm text-gray-600">Mai 2026</p>
-                                    <p className="text-2xl font-bold text-orange-600">623K Dirhams</p>
-                                    <p className="text-xs text-gray-500">±55K</p>
-                                </div>
-                            </div>
-
-                            <div className="p-4 bg-white rounded-lg border border-orange-100">
-                                <p className="text-sm font-semibold text-orange-900">
-                                    ⚠️ Alerte Prédictive
+            {/* PRO Feature: Profit Trend Analysis — only with real data */}
+            {metrics && metrics.revenue > 0 && (
+                <PackGate feature="trendAnalysis">
+                    <Card className="border-blue-200 bg-blue-50/30">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <LineChart className="h-5 w-5 text-blue-600" />
+                                Analyse de Rentabilite (90 jours)
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="p-6 bg-white dark:bg-muted rounded-lg text-center">
+                                <p className="text-2xl font-bold text-blue-600 mb-2">
+                                    Marge nette: {profitMargin}%
                                 </p>
-                                <p className="text-xs text-orange-700 mt-1">
-                                    Baisse de trésorerie attendue en mai (-18%).
-                                    Recommandation: Négocier délais fournisseurs ou prévoir ligne de crédit.
+                                <p className="text-sm text-muted-foreground">
+                                    Basee sur les donnees reelles du mois en cours
                                 </p>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
+                        </CardContent>
+                    </Card>
+                </PackGate>
+            )}
+
+            {/* PRO_PLUS Feature: Cashflow Forecasting — only with real data */}
+            {metrics && metrics.revenue > 0 && (
+                <PackGate feature="aiPredictions">
+                    <Card className="border-green-200 bg-green-50/30">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-green-600" />
+                                Previsions de Tresorerie
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="p-6 bg-white dark:bg-muted rounded-lg text-center">
+                                <p className="text-2xl font-bold">
+                                    {(metrics.cashFlow || 0).toLocaleString()} Dirhams
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Tresorerie disponible actuelle
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </PackGate>
+            )}
         </div>
     );
 }
