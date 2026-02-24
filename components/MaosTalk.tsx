@@ -90,17 +90,24 @@ export default function MaosTalk() {
     isPlayingRef.current = true;
     const audio = new Audio(`data:audio/mp3;base64,${audioData}`);
     currentAudioRef.current = audio;
+    const releaseAudio = () => {
+      audio.src = '';
+      audio.load(); // Release data URL memory
+    };
     audio.onended = () => {
+      releaseAudio();
       isPlayingRef.current = false;
       currentAudioRef.current = null;
       playNextAudio();
     };
     audio.onerror = () => {
+      releaseAudio();
       isPlayingRef.current = false;
       currentAudioRef.current = null;
       playNextAudio();
     };
     audio.play().catch(() => {
+      releaseAudio();
       isPlayingRef.current = false;
       currentAudioRef.current = null;
       playNextAudio();
@@ -112,6 +119,8 @@ export default function MaosTalk() {
     isPlayingRef.current = false;
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
+      currentAudioRef.current.src = '';
+      currentAudioRef.current.load(); // Release data URL memory
       currentAudioRef.current = null;
     }
   }, []);

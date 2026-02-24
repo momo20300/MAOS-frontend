@@ -75,6 +75,11 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       return;
     }
 
+    // Resume suspended AudioContext (browser autoplay policy)
+    if (ctx.state === "suspended") {
+      try { await ctx.resume(); } catch { /* ignore */ }
+    }
+
     while (playbackBufferRef.current.length > 0) {
       const samples = playbackBufferRef.current.shift()!;
       const buffer = ctx.createBuffer(1, samples.length, 24000);
@@ -84,10 +89,15 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       source.buffer = buffer;
       source.connect(ctx.destination);
 
-      await new Promise<void>((resolve) => {
-        source.onended = () => resolve();
-        source.start();
-      });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => { source.stop(); resolve(); }, 10000);
+          source.onended = () => { clearTimeout(timeout); resolve(); };
+          source.start();
+        });
+      } catch {
+        // Audio playback error, skip chunk
+      }
     }
 
     isPlayingRef.current = false;
@@ -101,6 +111,7 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       durationTimerRef.current = null;
     }
     if (socketRef.current) {
+      socketRef.current.removeAllListeners();
       socketRef.current.disconnect();
       socketRef.current = null;
     }
@@ -159,6 +170,12 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       userId = payload.sub || payload.userId || "";
     } catch {
       // fallback
+    }
+
+    if (!tenantId || !userId) {
+      setError("Token invalide — identifiants manquants");
+      setStatus("idle");
+      return;
     }
 
     try {

@@ -59,16 +59,29 @@ const ToastContext = React.createContext<ToastContextType | undefined>(undefined
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<(ToastProps & { id: number })[]>([]);
   const idRef = React.useRef(0);
+  const timeoutMapRef = React.useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Clear all timers on unmount
+  React.useEffect(() => {
+    return () => {
+      timeoutMapRef.current.forEach((t) => clearTimeout(t));
+      timeoutMapRef.current.clear();
+    };
+  }, []);
 
   const showToast = React.useCallback((props: Omit<ToastProps, "onClose">) => {
     const id = idRef.current++;
     setToasts((prev) => [...prev, { ...props, id }]);
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      timeoutMapRef.current.delete(id);
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4000);
+    timeoutMapRef.current.set(id, timer);
   }, []);
 
   const removeToast = React.useCallback((id: number) => {
+    const timer = timeoutMapRef.current.get(id);
+    if (timer) { clearTimeout(timer); timeoutMapRef.current.delete(id); }
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
