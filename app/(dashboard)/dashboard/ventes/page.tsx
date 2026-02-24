@@ -61,7 +61,9 @@ export default function DashboardVentesPage() {
         );
     }
 
-    const salesGrowth = ((metrics.monthlySales - metrics.todaySales * 30) / (metrics.todaySales * 30)) * 100;
+    const salesGrowth = metrics.todaySales > 0
+        ? ((metrics.monthlySales - metrics.todaySales * 30) / (metrics.todaySales * 30)) * 100
+        : 0;
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -172,110 +174,55 @@ export default function DashboardVentesPage() {
                 </CardContent>
             </Card>
 
-            {/* PRO Feature: Trend Analysis */}
-            <PackGate feature="trendAnalysis">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Analyse de Tendance (90 jours)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="p-6 bg-purple-50 rounded-lg text-center">
-                            <TrendingUp className="h-12 w-12 text-purple-600 mx-auto mb-3" />
-                            <p className="font-semibold text-purple-900">Tendance: +12.5% ce trimestre</p>
-                            <p className="text-sm text-purple-700 mt-2">
-                                Croissance stable avec pic attendu fin mars
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
+            {/* PRO Feature: Trend Analysis — only with real data */}
+            {metrics.monthlySales > 0 && (
+                <PackGate feature="trendAnalysis">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Analyse de Tendance</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="p-6 bg-purple-50 dark:bg-purple-950/30 rounded-lg text-center">
+                                <TrendingUp className="h-12 w-12 text-purple-600 mx-auto mb-3" />
+                                <p className="font-semibold text-purple-900 dark:text-purple-200">
+                                    Ventes mensuelles: {metrics.monthlySales.toLocaleString()} Dirhams
+                                </p>
+                                <p className="text-sm text-purple-700 dark:text-purple-300 mt-2">
+                                    {metrics.ordersCount} commandes | Panier moyen: {metrics.avgOrderValue.toLocaleString()} Dirhams
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </PackGate>
+            )}
 
-            {/* PRO Feature: AI Recommendations */}
-            <PackGate feature="aiRecommendations">
-                <Card className="border-purple-200 bg-purple-50/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-purple-600" />
-                            Recommandations IA
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            <div className="p-3 bg-white rounded-lg">
-                                <p className="text-sm font-medium">📈 Promouvoir "Product A"</p>
-                                <p className="text-xs text-gray-600 mt-1">
-                                    Tendance +15% en mars historiquement
-                                </p>
+            {/* PRO Feature: AI Recommendations — only with real data */}
+            {metrics.topProducts.length > 0 && (
+                <PackGate feature="aiRecommendations">
+                    <Card className="border-purple-200 bg-purple-50/30">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-purple-600" />
+                                Recommandations
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {metrics.topProducts.slice(0, 2).map((product, i) => (
+                                    <div key={i} className="p-3 bg-white dark:bg-muted rounded-lg">
+                                        <p className="text-sm font-medium">
+                                            {i === 0 ? "Meilleur produit" : "A suivre"}: {product.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {product.quantity} unites | {product.revenue.toLocaleString()} Dirhams
+                                        </p>
+                                    </div>
+                                ))}
                             </div>
-                            <div className="p-3 bg-white rounded-lg">
-                                <p className="text-sm font-medium">⚠️ Vérifier stock "Product C"</p>
-                                <p className="text-xs text-gray-600 mt-1">
-                                    Baisse inhabituelle détectée
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
-
-            {/* PRO_PLUS Feature: Predictions */}
-            <PackGate feature="aiPredictions">
-                <Card className="border-blue-200 bg-blue-50/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <TrendingUp className="h-5 w-5 text-blue-600" />
-                            Prévisions 6 Mois
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="text-center p-4 bg-white rounded-lg">
-                                <p className="text-sm text-gray-600">Mars 2026</p>
-                                <p className="text-2xl font-bold text-blue-600">52K Dirhams</p>
-                                <p className="text-xs text-gray-500">±3K</p>
-                            </div>
-                            <div className="text-center p-4 bg-white rounded-lg">
-                                <p className="text-sm text-gray-600">Avril 2026</p>
-                                <p className="text-2xl font-bold text-blue-600">58K Dirhams</p>
-                                <p className="text-xs text-gray-500">±4K</p>
-                            </div>
-                            <div className="text-center p-4 bg-white rounded-lg">
-                                <p className="text-sm text-gray-600">Mai 2026</p>
-                                <p className="text-2xl font-bold text-blue-600">61K Dirhams</p>
-                                <p className="text-xs text-gray-500">±4K</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
-
-            {/* PRO_PLUS Feature: Scenarios */}
-            <PackGate feature="aiScenarios">
-                <Card className="border-green-200 bg-green-50/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-green-600" />
-                            Scénarios "Et si..."
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            <button className="w-full p-3 bg-white rounded-lg hover:bg-green-50 transition text-left">
-                                <p className="text-sm font-medium">Si j'augmente les prix de 10% ?</p>
-                                <p className="text-xs text-gray-600 mt-1">
-                                    CA: +8.2% | Volume: -2.5%
-                                </p>
-                            </button>
-                            <button className="w-full p-3 bg-white rounded-lg hover:bg-green-50 transition text-left">
-                                <p className="text-sm font-medium">Si je lance une promo -15% ?</p>
-                                <p className="text-xs text-gray-600 mt-1">
-                                    CA: +12.5% | Volume: +32%
-                                </p>
-                            </button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
+                        </CardContent>
+                    </Card>
+                </PackGate>
+            )}
         </div>
     );
 }

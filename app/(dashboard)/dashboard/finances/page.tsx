@@ -55,7 +55,7 @@ export default function DashboardFinancesPage() {
         );
     }
 
-    const profitMargin = metrics ? ((metrics.profit / metrics.revenue) * 100).toFixed(1) : '0';
+    const profitMargin = metrics && metrics.revenue > 0 ? ((metrics.profit / metrics.revenue) * 100).toFixed(1) : '0';
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">

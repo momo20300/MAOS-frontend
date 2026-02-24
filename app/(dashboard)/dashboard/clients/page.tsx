@@ -162,80 +162,35 @@ export default function DashboardClientsPage() {
                 </CardContent>
             </Card>
 
-            {/* PRO Feature: RFM Scoring */}
-            <PackGate feature="advancedAnalytics">
-                <Card className="border-purple-200 bg-purple-50/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Target className="h-5 w-5 text-purple-600" />
-                            Scoring RFM (Recency, Frequency, Monetary)
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="p-4 bg-white rounded-lg text-center">
-                                <p className="text-sm text-gray-600 mb-2">Champions</p>
-                                <p className="text-3xl font-bold text-green-600">42</p>
-                                <p className="text-xs text-gray-500 mt-1">Score RFM: 9-10</p>
-                            </div>
-                            <div className="p-4 bg-white rounded-lg text-center">
-                                <p className="text-sm text-gray-600 mb-2">À Risque</p>
-                                <p className="text-3xl font-bold text-orange-600">18</p>
-                                <p className="text-xs text-gray-500 mt-1">Inactifs 60+ jours</p>
-                            </div>
-                            <div className="p-4 bg-white rounded-lg text-center">
-                                <p className="text-sm text-gray-600 mb-2">Perdus</p>
-                                <p className="text-3xl font-bold text-red-600">9</p>
-                                <p className="text-xs text-gray-500 mt-1">Inactifs 120+ jours</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
-
-            {/* PRO_PLUS Feature: Churn Prediction */}
-            <PackGate feature="aiPredictions">
-                <Card className="border-red-200 bg-red-50/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-red-600" />
-                            Prédiction de Churn (Risque de Perte)
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            <div className="p-4 bg-white rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="font-semibold">Client A SARL</p>
-                                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-                                        Risque élevé 87%
-                                    </span>
+            {/* PRO Feature: RFM Scoring — only with real data */}
+            {metrics && metrics.totalCustomers > 0 && (
+                <PackGate feature="advancedAnalytics">
+                    <Card className="border-purple-200 bg-purple-50/30">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Target className="h-5 w-5 text-purple-600" />
+                                Scoring RFM (Recency, Frequency, Monetary)
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="p-4 bg-white dark:bg-muted rounded-lg text-center">
+                                    <p className="text-sm text-muted-foreground mb-2">Total Clients</p>
+                                    <p className="text-3xl font-bold text-blue-600">{metrics.totalCustomers}</p>
                                 </div>
-                                <p className="text-sm text-gray-600">
-                                    Aucun achat depuis 45 jours | Pattern detecté
-                                </p>
-                                <p className="text-xs text-purple-600 mt-2">
-                                    💡 Recommandation: Offre de réactivation -15%
-                                </p>
-                            </div>
-                            <div className="p-4 bg-white rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="font-semibold">Client D Ltd</p>
-                                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
-                                        Risque moyen 52%
-                                    </span>
+                                <div className="p-4 bg-white dark:bg-muted rounded-lg text-center">
+                                    <p className="text-sm text-muted-foreground mb-2">Actifs</p>
+                                    <p className="text-3xl font-bold text-green-600">{metrics.activeCustomers}</p>
                                 </div>
-                                <p className="text-sm text-gray-600">
-                                    Fréquence d'achat en baisse (-35%)
-                                </p>
-                                <p className="text-xs text-purple-600 mt-2">
-                                    💡 Recommandation: Appel de fidélisation
-                                </p>
+                                <div className="p-4 bg-white dark:bg-muted rounded-lg text-center">
+                                    <p className="text-sm text-muted-foreground mb-2">Nouveaux ce mois</p>
+                                    <p className="text-3xl font-bold text-purple-600">{metrics.newThisMonth}</p>
+                                </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
+                        </CardContent>
+                    </Card>
+                </PackGate>
+            )}
         </div>
     );
 }

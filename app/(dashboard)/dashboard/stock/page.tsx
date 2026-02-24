@@ -153,73 +153,49 @@ export default function DashboardStockPage() {
                 </CardContent>
             </Card>
 
-            {/* PRO Feature: Smart Alerts */}
-            <PackGate feature="smartAlerts">
-                <Card className="border-orange-200 bg-orange-50/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-orange-600" />
-                            Alertes Intelligentes
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            <div className="p-3 bg-white rounded-lg">
-                                <p className="text-sm font-medium">⚠️ Rupture probable "Item A"</p>
-                                <p className="text-xs text-gray-600 mt-1">
-                                    Stock actuel: 15 unités | Ventes moyennes: 12/jour
+            {/* PRO Feature: Smart Alerts — only with real data */}
+            {metrics && metrics.lowStockItems > 0 && (
+                <PackGate feature="smartAlerts">
+                    <Card className="border-orange-200 bg-orange-50/30">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                                Alertes Intelligentes
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="p-4 bg-white dark:bg-muted rounded-lg text-center">
+                                <p className="text-2xl font-bold text-orange-600">{metrics.lowStockItems}</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    articles en stock bas necessitant un reapprovisionnement
                                 </p>
                             </div>
-                            <div className="p-3 bg-white rounded-lg">
-                                <p className="text-sm font-medium">📊 Surstock détecté "Item C"</p>
-                                <p className="text-xs text-gray-600 mt-1">
-                                    68 jours de stock vs 30 jours recommandés
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
+                        </CardContent>
+                    </Card>
+                </PackGate>
+            )}
 
-            {/* PRO_PLUS Feature: Stockout Predictions */}
-            <PackGate feature="aiPredictions">
-                <Card className="border-blue-200 bg-blue-50/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-blue-600" />
-                            Prévisions de Rupture
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            <div className="p-4 bg-white rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="font-semibold">Item A</p>
-                                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-                                        Risque élevé
-                                    </span>
-                                </div>
-                                <p className="text-sm text-gray-600">Rupture estimée: 12 mars 2026</p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Recommandation: Commander 150 unités avant le 8 mars
+            {/* PRO_PLUS Feature: Stock Analysis — only with real data */}
+            {metrics && metrics.totalItems > 0 && (
+                <PackGate feature="aiPredictions">
+                    <Card className="border-blue-200 bg-blue-50/30">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-blue-600" />
+                                Analyse du Stock
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="p-4 bg-white dark:bg-muted rounded-lg text-center">
+                                <p className="text-2xl font-bold">{metrics.totalItems} articles</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Valorisation: {metrics.stockValue.toLocaleString()} Dirhams
                                 </p>
                             </div>
-                            <div className="p-4 bg-white rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="font-semibold">Item D</p>
-                                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
-                                        Risque moyen
-                                    </span>
-                                </div>
-                                <p className="text-sm text-gray-600">Rupture estimée: 25 mars 2026</p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Point de commande optimal: 18 mars
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </PackGate>
+                        </CardContent>
+                    </Card>
+                </PackGate>
+            )}
         </div>
     );
 }
