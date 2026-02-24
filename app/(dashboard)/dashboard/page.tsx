@@ -272,22 +272,21 @@ export default function DashboardPage() {
       {/* Row 3: Module Summary Grid */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Modules</h3>
-        <div className="flex flex-nowrap overflow-x-auto gap-4 pb-2 scrollbar-thin">
+        <div className="flex flex-nowrap gap-2">
           {MODULE_CARDS.map((mod) => {
             const Icon = mod.icon;
             const metric = data ? getModuleMetric(data, mod.key) : "...";
             return (
-              <Link key={mod.key} href={mod.link} className="shrink-0" style={{ minWidth: "200px" }}>
-                <Card className="py-3 px-4 hover:shadow-md transition-shadow cursor-pointer group h-full">
-                  <div className="flex items-start justify-between">
-                    <div className={`p-2 rounded-lg ${mod.bg}`}>
-                      <Icon className={`h-4 w-4 ${mod.color}`} />
+              <Link key={mod.key} href={mod.link} className="flex-1 min-w-0">
+                <Card className="py-2 px-2.5 hover:shadow-md transition-shadow cursor-pointer group h-full">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg ${mod.bg} shrink-0`}>
+                      <Icon className={`h-3.5 w-3.5 ${mod.color}`} />
                     </div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-sm font-semibold">{mod.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{metric}</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate">{mod.label}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{metric}</p>
+                    </div>
                   </div>
                 </Card>
               </Link>
