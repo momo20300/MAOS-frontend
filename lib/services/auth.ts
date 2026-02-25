@@ -57,10 +57,21 @@ const REFRESH_TOKEN_KEY = 'maos_refresh_token';
 const USER_KEY = 'maos_user';
 
 /**
- * Store tokens in localStorage and sync to cookies for middleware
+ * Multi-tab session isolation:
+ * - sessionStorage (per-tab) is the PRIMARY source for tokens/user
+ * - localStorage is SECONDARY: used for new-tab auto-login + cross-tab logout detection
+ * - Cookie is synced for middleware auth check
+ */
+
+/**
+ * Store tokens in sessionStorage (per-tab) + localStorage (cross-tab) + cookie (middleware)
  */
 export function storeTokens(tokens: AuthTokens): void {
   if (typeof window !== 'undefined') {
+    // Per-tab primary source
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
+    sessionStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+    // Cross-tab secondary (for new-tab auto-login + logout detection)
     localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
     localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
     // Sync to cookies for middleware auth check
@@ -69,40 +80,42 @@ export function storeTokens(tokens: AuthTokens): void {
 }
 
 /**
- * Store user in localStorage
+ * Store user in sessionStorage (per-tab) + localStorage (cross-tab)
  */
 export function storeUser(user: AuthUser): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    const userStr = JSON.stringify(user);
+    sessionStorage.setItem(USER_KEY, userStr);
+    localStorage.setItem(USER_KEY, userStr);
   }
 }
 
 /**
- * Get access token from localStorage
+ * Get access token: sessionStorage first (per-tab), then localStorage fallback
  */
 export function getAccessToken(): string | null {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    return sessionStorage.getItem(ACCESS_TOKEN_KEY) || localStorage.getItem(ACCESS_TOKEN_KEY);
   }
   return null;
 }
 
 /**
- * Get refresh token from localStorage
+ * Get refresh token: sessionStorage first (per-tab), then localStorage fallback
  */
 export function getRefreshToken(): string | null {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+    return sessionStorage.getItem(REFRESH_TOKEN_KEY) || localStorage.getItem(REFRESH_TOKEN_KEY);
   }
   return null;
 }
 
 /**
- * Get user from localStorage
+ * Get user: sessionStorage first (per-tab), then localStorage fallback
  */
 export function getStoredUser(): AuthUser | null {
   if (typeof window !== 'undefined') {
-    const userStr = localStorage.getItem(USER_KEY);
+    const userStr = sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY);
     if (userStr) {
       try {
         return JSON.parse(userStr);
@@ -115,10 +128,15 @@ export function getStoredUser(): AuthUser | null {
 }
 
 /**
- * Clear all auth data from localStorage and cookies
+ * Clear all auth data from sessionStorage + localStorage + cookies
  */
 export function clearAuthData(): void {
   if (typeof window !== 'undefined') {
+    // Clear per-tab
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
+    // Clear cross-tab (triggers 'storage' event in other tabs)
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -128,7 +146,24 @@ export function clearAuthData(): void {
 }
 
 /**
- * Check if user is authenticated
+ * Bootstrap tab session: if sessionStorage is empty but localStorage has data,
+ * copy to sessionStorage (new tab auto-login from last session)
+ */
+export function bootstrapTabSession(): void {
+  if (typeof window !== 'undefined') {
+    if (!sessionStorage.getItem(ACCESS_TOKEN_KEY) && localStorage.getItem(ACCESS_TOKEN_KEY)) {
+      const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+      const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
+      const user = localStorage.getItem(USER_KEY);
+      if (token) sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
+      if (refresh) sessionStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+      if (user) sessionStorage.setItem(USER_KEY, user);
+    }
+  }
+}
+
+/**
+ * Check if user is authenticated (per-tab first, then localStorage)
  */
 export function isAuthenticated(): boolean {
   return !!getAccessToken();

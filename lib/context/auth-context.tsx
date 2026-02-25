@@ -14,6 +14,7 @@ import {
   isAuthenticated,
   switchTenant as authSwitchTenant,
   clearAuthData,
+  bootstrapTabSession,
 } from '../services/auth';
 
 interface AuthContextType {
@@ -34,20 +35,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Initialize auth state
+  // Initialize auth state + bootstrap per-tab session
   useEffect(() => {
+    // Bootstrap: if new tab, copy auth from localStorage to sessionStorage
+    bootstrapTabSession();
+
     const initAuth = async () => {
       try {
-        // Check if we have stored auth data
+        // Check if we have stored auth data (sessionStorage first, then localStorage)
         if (isAuthenticated()) {
-          // Sync cookie from localStorage to ensure middleware passes
-          // This fixes the redirect loop if cookie is lost but localStorage remains
-          const token = localStorage.getItem('maos_access_token');
+          // Sync cookie from sessionStorage/localStorage to ensure middleware passes
+          const token = sessionStorage.getItem('maos_access_token') || localStorage.getItem('maos_access_token');
           if (token) {
             document.cookie = `maos_access_token=${token}; path=/; max-age=604800; SameSite=Lax`;
           }
 
-          // Try to get user from storage first
+          // Try to get user from storage first (sessionStorage prioritized)
           const storedUser = getStoredUser();
           if (storedUser) {
             setUser(storedUser);
@@ -74,6 +77,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
   }, []);
+
+  // Cross-tab logout detection: if another tab clears localStorage, logout here too
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      // Another tab removed the access token → global logout
+      if (event.key === 'maos_access_token' && event.newValue === null) {
+        // Clear this tab's session too
+        sessionStorage.removeItem('maos_access_token');
+        sessionStorage.removeItem('maos_refresh_token');
+        sessionStorage.removeItem('maos_user');
+        document.cookie = 'maos_access_token=; path=/; max-age=0; SameSite=Lax';
+        setUser(null);
+        router.push('/login');
+      }
+      // Note: we intentionally DO NOT react to token changes (new login in another tab)
+      // Each tab keeps its own session via sessionStorage
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [router]);
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     setIsLoading(true);
