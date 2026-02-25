@@ -66,16 +66,17 @@ export default function Home() {
 
       {/* ── Navigation ── */}
       <nav className="relative z-20 px-6 md:px-12 py-5">
-        <div className="flex items-center justify-between">
-          <div className="w-[100px] hidden sm:block" />
-          <Image
-            src="/logo_darkmode.png"
-            alt="MAOS"
-            width={170}
-            height={32}
-            priority
-            unoptimized
-          />
+        <div className="relative flex items-center justify-end min-h-[40px]">
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <Image
+              src="/logo_darkmode.png"
+              alt="MAOS"
+              width={170}
+              height={32}
+              priority
+              unoptimized
+            />
+          </div>
           <div className="flex items-center gap-6">
             <Link
               href="/pricing"
