@@ -65,28 +65,31 @@ export default function Home() {
       <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-emerald-600/5 rounded-full blur-[120px] -z-10" />
 
       {/* ── Navigation ── */}
-      <nav className="relative z-20 flex items-center justify-between px-6 md:px-12 py-5">
-        <Image
-          src="/logo_darkmode.png"
-          alt="MAOS"
-          width={120}
-          height={23}
-          priority
-          unoptimized
-        />
-        <div className="flex items-center gap-6">
-          <Link
-            href="/pricing"
-            className="text-sm text-white/50 hover:text-white/90 transition-colors duration-300 hidden sm:block"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/login"
-            className="text-sm px-5 py-2 rounded-lg border border-white/[0.08] text-white/70 hover:text-white hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300"
-          >
-            Log in
-          </Link>
+      <nav className="relative z-20 px-6 md:px-12 py-5">
+        <div className="flex items-center justify-between">
+          <div className="w-[100px] hidden sm:block" />
+          <Image
+            src="/logo_darkmode.png"
+            alt="MAOS"
+            width={170}
+            height={32}
+            priority
+            unoptimized
+          />
+          <div className="flex items-center gap-6">
+            <Link
+              href="/pricing"
+              className="text-sm text-white/50 hover:text-white/90 transition-colors duration-300 hidden sm:block"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/login"
+              className="text-sm px-5 py-2 rounded-lg border border-white/[0.08] text-white/70 hover:text-white hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300"
+            >
+              Log in
+            </Link>
+          </div>
         </div>
       </nav>
 

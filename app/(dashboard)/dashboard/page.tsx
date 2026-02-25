@@ -358,12 +358,12 @@ export default function DashboardPage() {
       {/* Bottom: Module Summary Grid */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Modules</h3>
-        <div className="flex flex-nowrap gap-2">
+        <div className="grid grid-cols-6 gap-2">
           {MODULE_CARDS.map((mod) => {
             const Icon = mod.icon;
             const metric = data ? getModuleMetric(data, mod.key) : "...";
             return (
-              <Link key={mod.key} href={mod.link} className="flex-1 min-w-0">
+              <Link key={mod.key} href={mod.link}>
                 <Card className="py-2 px-2.5 hover:shadow-md transition-shadow cursor-pointer group h-full">
                   <div className="flex items-center gap-2">
                     <div className={`p-1.5 rounded-lg ${mod.bg} shrink-0`}>

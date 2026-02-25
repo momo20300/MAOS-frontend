@@ -144,7 +144,7 @@ export default function MaosTalk() {
     });
   }, []);
 
-  // Debounced auto-hide: only hides when input is empty AND unfocused for 5s
+  // Debounced auto-hide: only hides when input is empty AND unfocused for 10s
   const resetHideTimer = useCallback(() => {
     if (hideTimerRef.current) {
       clearTimeout(hideTimerRef.current);
@@ -158,8 +158,21 @@ export default function MaosTalk() {
       if (!hasText && !hasFocus) {
         setIsMinimized(true);
       }
-    }, 5000);
+    }, 10000);
   }, [isMinimized]);
+
+  // Start auto-hide timer when chat becomes visible (not minimized)
+  useEffect(() => {
+    if (!isMinimized) {
+      resetHideTimer();
+    }
+    return () => {
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+    };
+  }, [isMinimized, resetHideTimer]);
 
   // Cancel hide timer when loading (keep bar visible)
   useEffect(() => {

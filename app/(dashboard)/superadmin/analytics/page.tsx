@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Users, TrendingUp, DollarSign, Activity, PieChart, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { authFetch } from "@/lib/services/auth";
 import Link from "next/link";
 
 interface PlatformAnalytics {
@@ -39,7 +40,8 @@ export default function SuperAdminAnalyticsPage() {
 
     const fetchAnalytics = async () => {
         try {
-            const res = await fetch('/api/superadmin/analytics');
+            const res = await authFetch('/api/superadmin/tenants/analytics');
+            if (!res.ok) throw new Error(`Erreur ${res.status}`);
             const data = await res.json();
             setAnalytics(data);
         } catch (error) {
