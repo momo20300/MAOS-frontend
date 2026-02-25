@@ -132,9 +132,6 @@ export function clearAuthData(): void {
     sessionStorage.removeItem(USER_KEY);
     // Clear the cookie
     document.cookie = 'maos_access_token=; path=/; max-age=0; SameSite=Lax';
-    // Broadcast logout to other tabs via localStorage event
-    localStorage.setItem(LOGOUT_EVENT_KEY, Date.now().toString());
-    localStorage.removeItem(LOGOUT_EVENT_KEY);
   }
 }
 

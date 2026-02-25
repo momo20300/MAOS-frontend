@@ -72,24 +72,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  // Cross-tab logout: listen for logout broadcast via localStorage
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'maos_logout_event') {
-        // Another tab triggered logout — clear this tab too
-        sessionStorage.removeItem('maos_access_token');
-        sessionStorage.removeItem('maos_refresh_token');
-        sessionStorage.removeItem('maos_user');
-        document.cookie = 'maos_access_token=; path=/; max-age=0; SameSite=Lax';
-        setUser(null);
-        router.push('/login');
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [router]);
-
   const login = useCallback(async (credentials: LoginCredentials) => {
     setIsLoading(true);
     try {
