@@ -20,10 +20,10 @@ export function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.includes(pathname);
   const isAuthRoute = authRoutes.includes(pathname);
 
-  // If user is on auth route and has token, redirect to dashboard
-  if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+  // Don't redirect /login → /dashboard here.
+  // The cookie is shared across tabs, but each tab has its own session
+  // in sessionStorage. Let the client-side AuthProvider handle the redirect
+  // after verifying the per-tab session. This allows multi-account support.
 
   // If route requires auth and no token, redirect to login
   if (!isPublicRoute && !token) {

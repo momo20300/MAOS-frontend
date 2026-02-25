@@ -155,7 +155,7 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
     setAssistantTranscript("");
     setPdfData(null);
 
-    const token = localStorage.getItem("maos_access_token");
+    const token = sessionStorage.getItem("maos_access_token");
     if (!token) {
       setError("Non authentifie");
       setStatus("idle");

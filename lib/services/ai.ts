@@ -113,7 +113,7 @@ export async function sendMessageStreamingSSE(
   callbacks: StreamingCallbacks,
   options?: { wantAudio?: boolean; sessionId?: string }
 ): Promise<void> {
-  const token = localStorage.getItem('maos_access_token');
+  const token = sessionStorage.getItem('maos_access_token');
   if (!token) {
     callbacks.onError('Non authentifié');
     return;
