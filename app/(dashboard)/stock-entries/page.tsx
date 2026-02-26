@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getStockEntries, getItems, createStockEntry, exportToCSV, printDocument } from "@/lib/services/erpnext";
+import { getStockEntries, getItems, createStockEntry, exportToCSV, printDocument, submitStockEntry, cancelStockEntry } from "@/lib/services/erpnext";
 import { StockEntryForm } from "@/components/forms";
 import {
   BarChart3, Plus, ArrowUpCircle, ArrowDownCircle, Search,
-  Download, Printer, FileSpreadsheet, ChevronLeft, ChevronRight, ArrowLeftRight
+  Download, Printer, FileSpreadsheet, ChevronLeft, ChevronRight, ArrowLeftRight,
+  CheckCircle, XCircle,
 } from "lucide-react";
 
 interface StockEntry {
@@ -46,6 +47,7 @@ export default function StockEntriesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const pageSize = 10;
 
   const fetchData = async () => {
@@ -114,6 +116,34 @@ export default function StockEntriesPage() {
 
   const handlePrint = () => {
     printDocument(filteredEntries, columns, "Mouvements de Stock");
+  };
+
+  const handleSubmitEntry = async (name: string) => {
+    if (!confirm(`Valider le mouvement de stock ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await submitStockEntry(name);
+      showToast("Mouvement valide avec succes", "success");
+      fetchData();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la validation", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancelEntry = async (name: string) => {
+    if (!confirm(`Annuler le mouvement de stock ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await cancelStockEntry(name);
+      showToast("Mouvement annule", "success");
+      fetchData();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de l'annulation", "error");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const getTypeBadge = (type: string) => {
@@ -319,13 +349,39 @@ export default function StockEntriesPage() {
                     )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold">
-                    {(entry.total_amount || 0).toLocaleString()} MAD
+                <div className="flex items-center gap-2">
+                  <div className="text-right mr-2">
+                    <div className="text-lg font-bold">
+                      {(entry.total_amount || 0).toLocaleString()} MAD
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {entry.docstatus === 1 ? "Valide" : "Brouillon"}
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {entry.docstatus === 1 ? "Valide" : "Brouillon"}
-                  </div>
+                  {entry.docstatus === 0 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="rounded-lg bg-green-600 hover:bg-green-700 text-white h-8"
+                      disabled={actionLoading === entry.name}
+                      onClick={(e) => { e.stopPropagation(); handleSubmitEntry(entry.name); }}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                      Valider
+                    </Button>
+                  )}
+                  {entry.docstatus === 1 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="rounded-lg h-8"
+                      disabled={actionLoading === entry.name}
+                      onClick={(e) => { e.stopPropagation(); handleCancelEntry(entry.name); }}
+                    >
+                      <XCircle className="h-3.5 w-3.5 mr-1" />
+                      Annuler
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

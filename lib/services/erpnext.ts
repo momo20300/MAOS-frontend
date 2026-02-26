@@ -1634,3 +1634,197 @@ export const printDocumentPDF = async (doctype: string, name: string) => {
     throw error;
   }
 };
+
+// ============================================================================
+// Document Workflow: Submit / Cancel
+// ============================================================================
+
+export const submitSalesQuotation = async (name: string) => {
+  const response = await authFetch(`/api/sales/quotations/${encodeURIComponent(name)}/submit`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la soumission du devis');
+};
+
+export const submitSalesOrder = async (name: string) => {
+  const response = await authFetch(`/api/sales/orders/${encodeURIComponent(name)}/submit`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la soumission de la commande');
+};
+
+export const submitSalesInvoice = async (name: string) => {
+  const response = await authFetch(`/api/sales/invoices/${encodeURIComponent(name)}/submit`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la soumission de la facture');
+};
+
+export const submitDeliveryNote = async (name: string) => {
+  const response = await authFetch(`/api/sales/delivery-notes/${encodeURIComponent(name)}/submit`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la soumission du bon de livraison');
+};
+
+export const cancelSalesDocument = async (doctype: string, name: string) => {
+  const response = await authFetch(`/api/sales/${doctype}/${encodeURIComponent(name)}/cancel`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de l\'annulation du document');
+};
+
+export const submitPurchaseOrder = async (name: string) => {
+  const response = await authFetch(`/api/purchase/orders/${encodeURIComponent(name)}/submit`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la soumission du bon de commande');
+};
+
+export const submitPurchaseInvoice = async (name: string) => {
+  const response = await authFetch(`/api/purchase/invoices/${encodeURIComponent(name)}/submit`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la soumission de la facture fournisseur');
+};
+
+export const submitPurchaseReceipt = async (name: string) => {
+  const response = await authFetch(`/api/purchase/receipts/${encodeURIComponent(name)}/submit`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la soumission du bon de reception');
+};
+
+export const cancelPurchaseDocument = async (doctype: string, name: string) => {
+  const response = await authFetch(`/api/purchase/${doctype}/${encodeURIComponent(name)}/cancel`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de l\'annulation du document');
+};
+
+export const submitStockEntry = async (name: string) => {
+  const response = await authFetch(`/api/stock/entries/${encodeURIComponent(name)}/submit`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la soumission du mouvement de stock');
+};
+
+export const cancelStockEntry = async (name: string) => {
+  const response = await authFetch(`/api/stock/entries/${encodeURIComponent(name)}/cancel`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de l\'annulation du mouvement de stock');
+};
+
+// ============================================================================
+// Document Conversions
+// ============================================================================
+
+export const convertQuotationToOrder = async (name: string) => {
+  const response = await authFetch(`/api/sales/quotations/${encodeURIComponent(name)}/convert-to-order`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la conversion du devis en commande');
+};
+
+export const convertOrderToInvoice = async (name: string) => {
+  const response = await authFetch(`/api/sales/orders/${encodeURIComponent(name)}/convert-to-invoice`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la conversion de la commande en facture');
+};
+
+export const convertOrderToDelivery = async (name: string) => {
+  const response = await authFetch(`/api/sales/orders/${encodeURIComponent(name)}/convert-to-delivery`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la conversion de la commande en bon de livraison');
+};
+
+export const convertPOToReceipt = async (name: string) => {
+  const response = await authFetch(`/api/purchase/orders/${encodeURIComponent(name)}/convert-to-receipt`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la conversion du bon de commande en reception');
+};
+
+export const convertPOToInvoice = async (name: string) => {
+  const response = await authFetch(`/api/purchase/orders/${encodeURIComponent(name)}/convert-to-invoice`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la conversion du bon de commande en facture');
+};
+
+// ============================================================================
+// CRM: Lead Conversion + Opportunity
+// ============================================================================
+
+export const convertLeadToCustomer = async (name: string) => {
+  const response = await authFetch(`/api/crm/leads/${encodeURIComponent(name)}/convert-to-customer`, { method: 'POST' });
+  return handleMutationResponse(response, 'Erreur lors de la conversion du lead en client');
+};
+
+export const createOpportunity = async (opportunity: {
+  opportunity_from: string;
+  party_name: string;
+  opportunity_type?: string;
+  status?: string;
+  source?: string;
+  expected_closing?: string;
+  opportunity_amount?: number;
+  company?: string;
+}) => {
+  const response = await authFetch('/api/crm/opportunities', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(opportunity),
+  });
+  return handleMutationResponse(response, 'Erreur lors de la creation de l\'opportunite');
+};
+
+export const getOpportunity = async (name: string) => {
+  try {
+    const response = await authFetch(`/api/crm/opportunities/${encodeURIComponent(name)}`);
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Get opportunity error:', error);
+    return null;
+  }
+};
+
+// ============================================================================
+// Accounting: Trial Balance
+// ============================================================================
+
+export interface TrialBalanceRow {
+  account: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  parentAccount: string | null;
+  isGroup: boolean;
+}
+
+export interface TrialBalanceData {
+  rows: TrialBalanceRow[];
+  totals: { debit: number; credit: number };
+}
+
+// ============================================================================
+// Payment from Invoice (with invoice reference)
+// ============================================================================
+
+export const recordPaymentForInvoice = async (payment: {
+  payment_type: 'Receive' | 'Pay';
+  party_type: 'Customer' | 'Supplier';
+  party: string;
+  paid_amount: number;
+  reference_doctype: string;
+  reference_name: string;
+  posting_date?: string;
+  reference_no?: string;
+}) => {
+  const payload = {
+    payment_type: payment.payment_type,
+    party_type: payment.party_type,
+    party: payment.party,
+    paid_amount: payment.paid_amount,
+    posting_date: payment.posting_date || new Date().toISOString().split('T')[0],
+    reference_no: payment.reference_no,
+    references: [{
+      reference_doctype: payment.reference_doctype,
+      reference_name: payment.reference_name,
+      allocated_amount: payment.paid_amount,
+    }],
+  };
+  const response = await authFetch('/api/erp/accounting/payments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleMutationResponse(response, 'Erreur lors de l\'enregistrement du paiement');
+};
+
+export const getTrialBalance = async (fromDate?: string, toDate?: string): Promise<TrialBalanceData | null> => {
+  try {
+    const params = new URLSearchParams();
+    if (fromDate) params.set('from_date', fromDate);
+    if (toDate) params.set('to_date', toDate);
+    const response = await authFetch(`/api/erp/accounting/trial-balance?${params.toString()}`);
+    const data = await response.json();
+    if (data.success) return data.data;
+    return null;
+  } catch (error) {
+    console.error('Trial balance error:', error);
+    return null;
+  }
+};

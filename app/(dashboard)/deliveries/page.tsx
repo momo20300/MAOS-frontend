@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   getDeliveryNotes, getCustomers, getItems, createDeliveryNote,
-  exportToCSV, printDocument
+  exportToCSV, printDocument,
+  submitDeliveryNote, cancelSalesDocument,
 } from "@/lib/services/erpnext";
 import { DeliveryNoteForm } from "@/components/forms";
 import {
   Truck, TrendingUp, Search, Plus, Download, Printer,
-  FileSpreadsheet, ChevronLeft, ChevronRight, Calendar, CheckCircle
+  FileSpreadsheet, ChevronLeft, ChevronRight, Calendar, CheckCircle, XCircle
 } from "lucide-react";
 
 interface Delivery {
@@ -46,6 +47,7 @@ export default function DeliveriesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const pageSize = 10;
 
   const fetchData = async () => {
@@ -100,6 +102,34 @@ export default function DeliveriesPage() {
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Erreur lors de la creation", "error");
       throw error;
+    }
+  };
+
+  const handleSubmitDelivery = async (name: string) => {
+    if (!confirm(`Soumettre le bon de livraison ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await submitDeliveryNote(name);
+      showToast("Bon de livraison soumis avec succes", "success");
+      fetchData();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la soumission", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancelDelivery = async (name: string) => {
+    if (!confirm(`Annuler le bon de livraison ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await cancelSalesDocument("delivery-notes", name);
+      showToast("Bon de livraison annule", "success");
+      fetchData();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de l'annulation", "error");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -232,7 +262,33 @@ export default function DeliveriesPage() {
                     </span>
                   </div>
                 </div>
-                <div className="text-lg font-bold">{(delivery.grand_total || 0).toLocaleString()} MAD</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-lg font-bold mr-2">{(delivery.grand_total || 0).toLocaleString()} MAD</div>
+                  {delivery.docstatus === 0 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="rounded-lg bg-green-600 hover:bg-green-700 text-white h-8"
+                      disabled={actionLoading === delivery.name}
+                      onClick={(e) => { e.stopPropagation(); handleSubmitDelivery(delivery.name); }}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                      Soumettre
+                    </Button>
+                  )}
+                  {delivery.docstatus === 1 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="rounded-lg h-8"
+                      disabled={actionLoading === delivery.name}
+                      onClick={(e) => { e.stopPropagation(); handleCancelDelivery(delivery.name); }}
+                    >
+                      <XCircle className="h-3.5 w-3.5 mr-1" />
+                      Annuler
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

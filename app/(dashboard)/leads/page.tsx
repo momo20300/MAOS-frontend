@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { getLeads, createLead, exportToCSV, printDocument, importFromCSV } from "@/lib/services/erpnext";
+import { getLeads, createLead, exportToCSV, printDocument, importFromCSV, convertLeadToCustomer } from "@/lib/services/erpnext";
 import { LeadForm } from "@/components/forms";
 import {
   Search, UserPlus, Mail, Phone, Plus, TrendingUp,
-  Download, Upload, Printer, FileSpreadsheet, ChevronLeft, ChevronRight
+  Download, Upload, Printer, FileSpreadsheet, ChevronLeft, ChevronRight, UserCheck
 } from "lucide-react";
 
 interface Lead {
@@ -40,6 +40,7 @@ export default function LeadsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pageSize = 12;
 
@@ -131,6 +132,20 @@ export default function LeadsPage() {
 
   const handlePrint = () => {
     printDocument(filteredLeads, columns, "Pipeline des Leads");
+  };
+
+  const handleConvertToCustomer = async (lead: Lead) => {
+    if (!confirm(`Convertir le lead "${lead.lead_name}" en client ?`)) return;
+    setActionLoading(lead.name);
+    try {
+      await convertLeadToCustomer(lead.name);
+      showToast(`Lead "${lead.lead_name}" converti en client`, "success");
+      fetchLeads();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la conversion", "error");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -338,8 +353,22 @@ export default function LeadsPage() {
                   <span className="text-xs text-muted-foreground">{lead.mobile_no}</span>
                 </div>
               )}
-              <div className="text-xs text-muted-foreground pt-2 border-t">
-                Source: {lead.source || "-"}
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="text-xs text-muted-foreground">
+                  Source: {lead.source || "-"}
+                </span>
+                {lead.status !== "Converted" && lead.status !== "Do Not Contact" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg h-7 text-xs"
+                    disabled={actionLoading === lead.name}
+                    onClick={(e) => { e.stopPropagation(); handleConvertToCustomer(lead); }}
+                  >
+                    <UserCheck className="h-3 w-3 mr-1" />
+                    Client
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

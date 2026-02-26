@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   getSalesOrders, getCustomers, getItems, createSalesOrder,
-  exportToCSV, printDocument
+  exportToCSV, printDocument,
+  submitSalesOrder, cancelSalesDocument, convertOrderToInvoice, convertOrderToDelivery,
 } from "@/lib/services/erpnext";
 import { OrderForm } from "@/components/forms";
 import {
   ShoppingCart, Plus, TrendingUp, Search,
-  Download, Printer, FileSpreadsheet, ChevronLeft, ChevronRight, Calendar
+  Download, Printer, FileSpreadsheet, ChevronLeft, ChevronRight, Calendar,
+  CheckCircle, XCircle, ArrowRight, FileText, Truck,
 } from "lucide-react";
 
 interface SalesOrder {
@@ -22,6 +24,7 @@ interface SalesOrder {
   delivery_date: string;
   grand_total: number;
   status: string;
+  docstatus: number;
 }
 
 interface Customer {
@@ -55,6 +58,7 @@ export default function OrdersPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const pageSize = 10;
 
   const fetchOrders = async () => {
@@ -123,6 +127,62 @@ export default function OrdersPage() {
 
   const handlePrint = () => {
     printDocument(filteredOrders, columns, "Liste des Commandes");
+  };
+
+  const handleSubmit = async (name: string) => {
+    if (!confirm(`Soumettre la commande ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await submitSalesOrder(name);
+      showToast("Commande soumise avec succes", "success");
+      fetchOrders();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la soumission", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancel = async (name: string) => {
+    if (!confirm(`Annuler la commande ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await cancelSalesDocument("orders", name);
+      showToast("Commande annulee", "success");
+      fetchOrders();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de l'annulation", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleConvertToInvoice = async (name: string) => {
+    if (!confirm(`Convertir la commande ${name} en facture ?`)) return;
+    setActionLoading(name);
+    try {
+      await convertOrderToInvoice(name);
+      showToast("Facture creee avec succes", "success");
+      fetchOrders();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la conversion", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleConvertToDelivery = async (name: string) => {
+    if (!confirm(`Convertir la commande ${name} en bon de livraison ?`)) return;
+    setActionLoading(name);
+    try {
+      await convertOrderToDelivery(name);
+      showToast("Bon de livraison cree avec succes", "success");
+      fetchOrders();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la conversion", "error");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -306,10 +366,56 @@ export default function OrdersPage() {
                     </span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold">
+                <div className="flex items-center gap-2">
+                  <div className="text-lg font-bold mr-2">
                     {(order.grand_total || 0).toLocaleString()} MAD
                   </div>
+                  {order.docstatus === 0 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="rounded-lg bg-green-600 hover:bg-green-700 text-white h-8"
+                      disabled={actionLoading === order.name}
+                      onClick={(e) => { e.stopPropagation(); handleSubmit(order.name); }}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                      Soumettre
+                    </Button>
+                  )}
+                  {order.docstatus === 1 && (
+                    <>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white h-8"
+                        disabled={actionLoading === order.name}
+                        onClick={(e) => { e.stopPropagation(); handleConvertToInvoice(order.name); }}
+                      >
+                        <FileText className="h-3.5 w-3.5 mr-1" />
+                        Facture
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="rounded-lg bg-purple-600 hover:bg-purple-700 text-white h-8"
+                        disabled={actionLoading === order.name}
+                        onClick={(e) => { e.stopPropagation(); handleConvertToDelivery(order.name); }}
+                      >
+                        <Truck className="h-3.5 w-3.5 mr-1" />
+                        BL
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="rounded-lg h-8"
+                        disabled={actionLoading === order.name}
+                        onClick={(e) => { e.stopPropagation(); handleCancel(order.name); }}
+                      >
+                        <XCircle className="h-3.5 w-3.5 mr-1" />
+                        Annuler
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

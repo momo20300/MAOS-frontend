@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   getInvoices, getCustomers, getItems, createInvoice,
-  exportToCSV, printDocument, printDocumentPDF
+  exportToCSV, printDocument, printDocumentPDF,
+  submitSalesInvoice, cancelSalesDocument,
+  recordPaymentForInvoice,
 } from "@/lib/services/erpnext";
 import { OrderForm } from "@/components/forms";
 import {
   FileText, TrendingUp, TrendingDown, Search, Plus, Download, Printer,
-  FileSpreadsheet, ChevronLeft, ChevronRight, Calendar
+  FileSpreadsheet, ChevronLeft, ChevronRight, Calendar, CheckCircle, XCircle, CreditCard
 } from "lucide-react";
 
 interface Invoice {
@@ -58,6 +60,7 @@ export default function InvoicesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const pageSize = 10;
 
   const fetchInvoices = async () => {
@@ -132,6 +135,64 @@ export default function InvoicesPage() {
 
   const handlePrint = () => {
     printDocument(filteredInvoices, columns, "Liste des Factures");
+  };
+
+  const handleSubmitInvoice = async (name: string) => {
+    if (!confirm(`Soumettre la facture ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await submitSalesInvoice(name);
+      showToast("Facture soumise avec succes", "success");
+      fetchInvoices();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la soumission", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancelInvoice = async (name: string) => {
+    if (!confirm(`Annuler la facture ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await cancelSalesDocument("invoices", name);
+      showToast("Facture annulee", "success");
+      fetchInvoices();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de l'annulation", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRecordPayment = async (invoice: Invoice) => {
+    const amount = prompt(
+      `Enregistrer un paiement pour ${invoice.name}\nClient: ${invoice.customer_name}\nMontant restant: ${(invoice.outstanding_amount || 0).toLocaleString()} MAD\n\nMontant a payer (MAD):`,
+      String(invoice.outstanding_amount || invoice.grand_total)
+    );
+    if (!amount) return;
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      showToast("Montant invalide", "error");
+      return;
+    }
+    setActionLoading(invoice.name);
+    try {
+      await recordPaymentForInvoice({
+        payment_type: "Receive",
+        party_type: "Customer",
+        party: invoice.customer_name,
+        paid_amount: parsedAmount,
+        reference_doctype: "Sales Invoice",
+        reference_name: invoice.name,
+      });
+      showToast(`Paiement de ${parsedAmount.toLocaleString()} MAD enregistre`, "success");
+      fetchInvoices();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors du paiement", "error");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -334,8 +395,8 @@ export default function InvoicesPage() {
                     <span>Echeance: {new Date(invoice.due_date).toLocaleDateString("fr-FR")}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="text-right space-y-1 mr-2">
                     <div className="text-lg font-bold">
                       {(invoice.grand_total || 0).toLocaleString()} MAD
                     </div>
@@ -345,6 +406,42 @@ export default function InvoicesPage() {
                       </div>
                     )}
                   </div>
+                  {invoice.docstatus === 0 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="rounded-lg bg-green-600 hover:bg-green-700 text-white h-8"
+                      disabled={actionLoading === invoice.name}
+                      onClick={(e) => { e.stopPropagation(); handleSubmitInvoice(invoice.name); }}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                      Soumettre
+                    </Button>
+                  )}
+                  {invoice.docstatus === 1 && invoice.outstanding_amount > 0 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white h-8"
+                      disabled={actionLoading === invoice.name}
+                      onClick={(e) => { e.stopPropagation(); handleRecordPayment(invoice); }}
+                    >
+                      <CreditCard className="h-3.5 w-3.5 mr-1" />
+                      Payer
+                    </Button>
+                  )}
+                  {invoice.docstatus === 1 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="rounded-lg h-8"
+                      disabled={actionLoading === invoice.name}
+                      onClick={(e) => { e.stopPropagation(); handleCancelInvoice(invoice.name); }}
+                    >
+                      <XCircle className="h-3.5 w-3.5 mr-1" />
+                      Annuler
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"

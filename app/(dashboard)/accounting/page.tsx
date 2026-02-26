@@ -82,6 +82,12 @@ export default function AccountingDashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link href="/trial-balance">
+            <Button variant="outline" className="rounded-xl">
+              <Calculator className="mr-2 h-4 w-4" />
+              Balance
+            </Button>
+          </Link>
           <Link href="/payments">
             <Button variant="outline" className="rounded-xl">
               <CreditCard className="mr-2 h-4 w-4" />
@@ -99,8 +105,8 @@ export default function AccountingDashboardPage() {
 
       {/* KPI Cards — Row 1 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link href="/invoices">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/invoices" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Chiffre d&apos;Affaires</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -124,8 +130,8 @@ export default function AccountingDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/purchase-invoices">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/purchase-invoices" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Charges</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -141,8 +147,8 @@ export default function AccountingDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/reports/exploitation">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/reports/exploitation" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Resultat Net</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -158,8 +164,8 @@ export default function AccountingDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/invoices">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/invoices" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">CA du Mois</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -178,7 +184,7 @@ export default function AccountingDashboardPage() {
 
       {/* KPI Cards — Row 2: Receivables & Payables */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Link href="/invoices">
+        <Link href="/invoices" className="h-full">
           <Card className="rounded-2xl border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardContent className="flex items-center gap-4 py-4">
               <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-950">
@@ -193,7 +199,7 @@ export default function AccountingDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/purchase-invoices">
+        <Link href="/purchase-invoices" className="h-full">
           <Card className="rounded-2xl border-l-4 border-l-orange-500 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardContent className="flex items-center gap-4 py-4">
               <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-950">

@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   getQuotations, getCustomers, getItems, createQuotation,
-  exportToCSV, printDocument
+  exportToCSV, printDocument,
+  submitSalesQuotation, cancelSalesDocument, convertQuotationToOrder,
 } from "@/lib/services/erpnext";
 import { OrderForm } from "@/components/forms";
 import {
   ClipboardList, Plus, TrendingUp, Search,
-  Download, Printer, FileSpreadsheet, ChevronLeft, ChevronRight, Calendar
+  Download, Printer, FileSpreadsheet, ChevronLeft, ChevronRight, Calendar,
+  CheckCircle, XCircle, ArrowRight,
 } from "lucide-react";
 
 interface Quotation {
@@ -22,6 +24,7 @@ interface Quotation {
   valid_till?: string;
   grand_total: number;
   status: string;
+  docstatus: number;
 }
 
 interface Customer {
@@ -55,6 +58,7 @@ export default function QuotationsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const pageSize = 10;
 
   const fetchQuotations = async () => {
@@ -127,6 +131,48 @@ export default function QuotationsPage() {
 
   const handlePrint = () => {
     printDocument(filteredQuotations, columns, "Liste des Devis");
+  };
+
+  const handleSubmit = async (name: string) => {
+    if (!confirm(`Soumettre le devis ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await submitSalesQuotation(name);
+      showToast("Devis soumis avec succes", "success");
+      fetchQuotations();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la soumission", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancel = async (name: string) => {
+    if (!confirm(`Annuler le devis ${name} ?`)) return;
+    setActionLoading(name);
+    try {
+      await cancelSalesDocument("quotations", name);
+      showToast("Devis annule", "success");
+      fetchQuotations();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de l'annulation", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleConvertToOrder = async (name: string) => {
+    if (!confirm(`Convertir le devis ${name} en commande ?`)) return;
+    setActionLoading(name);
+    try {
+      await convertQuotationToOrder(name);
+      showToast("Devis converti en commande avec succes", "success");
+      fetchQuotations();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Erreur lors de la conversion", "error");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -306,8 +352,46 @@ export default function QuotationsPage() {
                     )}
                   </div>
                 </div>
-                <div className="text-lg font-bold">
-                  {(quotation.grand_total || 0).toLocaleString()} MAD
+                <div className="flex items-center gap-2">
+                  <div className="text-lg font-bold mr-2">
+                    {(quotation.grand_total || 0).toLocaleString()} MAD
+                  </div>
+                  {quotation.docstatus === 0 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="rounded-lg bg-green-600 hover:bg-green-700 text-white h-8"
+                      disabled={actionLoading === quotation.name}
+                      onClick={(e) => { e.stopPropagation(); handleSubmit(quotation.name); }}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                      Soumettre
+                    </Button>
+                  )}
+                  {quotation.docstatus === 1 && (
+                    <>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white h-8"
+                        disabled={actionLoading === quotation.name}
+                        onClick={(e) => { e.stopPropagation(); handleConvertToOrder(quotation.name); }}
+                      >
+                        <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                        Commande
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="rounded-lg h-8"
+                        disabled={actionLoading === quotation.name}
+                        onClick={(e) => { e.stopPropagation(); handleCancel(quotation.name); }}
+                      >
+                        <XCircle className="h-3.5 w-3.5 mr-1" />
+                        Annuler
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
