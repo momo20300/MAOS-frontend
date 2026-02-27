@@ -98,7 +98,7 @@ export interface StreamingCallbacks {
   onTextChunk: (text: string) => void;
   onSentenceComplete?: (sentence: string, index: number) => void;
   onAudioReady?: (audioBase64: string, index: number) => void;
-  onComplete: (fullText: string, processingTime: number, audioCount?: number) => void;
+  onComplete: (fullText: string, processingTime: number, audioCount?: number, lang?: string) => void;
   onError: (error: string) => void;
   onPdfReady?: (pdfData: string, filename: string, reportTitle: string) => void;
 }
@@ -219,7 +219,7 @@ function handleSSEEvent(
       callbacks.onAudioReady?.(data.data, data.index);
       break;
     case 'complete':
-      callbacks.onComplete(data.fullText, data.processingTime || 0, data.audioCount);
+      callbacks.onComplete(data.fullText, data.processingTime || 0, data.audioCount, data.lang);
       break;
     case 'pdf_ready':
       if (callbacks.onPdfReady) {

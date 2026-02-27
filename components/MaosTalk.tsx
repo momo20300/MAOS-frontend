@@ -40,7 +40,7 @@ const CodeBlock = memo(function CodeBlock({ children, className }: { children: s
 const ChatBubble = memo(function ChatBubble({ msg, onDownloadPDF, onSpeak, isSpeaking }: {
   msg: Message;
   onDownloadPDF: (data: string, filename: string) => void;
-  onSpeak?: (text: string) => void;
+  onSpeak?: (text: string, lang?: string) => void;
   isSpeaking?: boolean;
 }) {
   if (msg.role === "user") {
@@ -103,7 +103,7 @@ const ChatBubble = memo(function ChatBubble({ msg, onDownloadPDF, onSpeak, isSpe
         {msg.content && onSpeak && (
           <div className="mt-2 flex items-center gap-2">
             <button
-              onClick={() => onSpeak(msg.content)}
+              onClick={() => onSpeak(msg.content, msg.lang)}
               className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
               title={isSpeaking ? "Arrêter la lecture" : "Lire à voix haute"}
             >
@@ -197,7 +197,7 @@ export default function MaosTalk() {
   }, []);
 
   // TTS speak toggle for individual messages
-  const speakMessage = useCallback(async (text: string) => {
+  const speakMessage = useCallback(async (text: string, lang?: string) => {
     // If already speaking this message, stop
     if (speakingMsgContent === text) {
       if (ttsAudioRef.current) {
@@ -220,7 +220,7 @@ export default function MaosTalk() {
       const res = await fetch(`${API_URL}/api/speech/tts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, lang: "fr" }),
+        body: JSON.stringify({ text, lang: lang || "fr" }),
       });
       if (!res.ok) { setSpeakingMsgContent(null); return; }
       const blob = await res.blob();
@@ -534,7 +534,7 @@ export default function MaosTalk() {
         });
       },
 
-      onComplete: (fullText: string) => {
+      onComplete: (fullText: string, _processingTime: number, _audioCount?: number, lang?: string) => {
         // Clear any pending flush timer
         if (streamFlushTimerRef.current) {
           clearTimeout(streamFlushTimerRef.current);
@@ -551,6 +551,7 @@ export default function MaosTalk() {
             updated[lastIndex] = {
               ...lastMsg,
               content: fullText,
+              lang: lang || lastMsg.lang,
             };
           }
           return updated;
