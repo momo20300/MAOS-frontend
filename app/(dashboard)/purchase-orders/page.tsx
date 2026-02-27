@@ -7,10 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   getPurchaseOrders, getSuppliers, getItems, createPurchaseOrder,
-  exportToCSV, printDocument,
+  exportToCSV, printDocument, printDocumentPDF,
   submitPurchaseOrder, cancelPurchaseDocument, convertPOToReceipt, convertPOToInvoice,
 } from "@/lib/services/erpnext";
 import { PurchaseOrderForm } from "@/components/forms";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import {
   ShoppingBag, TrendingUp, Search, Plus, Download, Printer,
   FileSpreadsheet, ChevronLeft, ChevronRight, Calendar,
@@ -45,24 +50,35 @@ export default function PurchaseOrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const pageSize = 10;
+
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData(filteredOrders, "transaction_date", "desc");
 
   const fetchData = async () => {
     setLoading(true);
-    const [ordersData, suppliersData, itemsData] = await Promise.all([
-      getPurchaseOrders(),
-      getSuppliers(),
-      getItems(),
-    ]);
-    setOrders(ordersData);
-    setFilteredOrders(ordersData);
-    setSuppliers(suppliersData);
-    setItems(itemsData);
-    setLoading(false);
+    setError(null);
+    try {
+      const [ordersData, suppliersData, itemsData] = await Promise.all([
+        getPurchaseOrders(),
+        getSuppliers(),
+        getItems(),
+      ]);
+      setOrders(ordersData);
+      setFilteredOrders(ordersData);
+      setSuppliers(suppliersData);
+      setItems(itemsData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement des commandes");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -79,16 +95,18 @@ export default function PurchaseOrdersPage() {
     } else if (statusFilter !== "all") {
       filtered = filtered.filter(o => o.status === statusFilter);
     }
+    if (dateFrom) filtered = filtered.filter(d => d.transaction_date >= dateFrom);
+    if (dateTo) filtered = filtered.filter(d => d.transaction_date <= dateTo);
     setFilteredOrders(filtered);
     setCurrentPage(1);
-  }, [search, statusFilter, orders]);
+  }, [search, statusFilter, orders, dateFrom, dateTo]);
 
   const submittedOrders = orders.filter(o => o.docstatus === 1);
   const totalAmount = submittedOrders.reduce((sum, o) => sum + (o.grand_total || 0), 0);
   const activeCount = orders.filter(o => o.status !== "Completed" && o.status !== "Cancelled" && o.status !== "Closed").length;
-  const totalPages = Math.ceil(filteredOrders.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginated = filteredOrders.slice(startIndex, startIndex + pageSize);
+  const paginated = sortedData.slice(startIndex, startIndex + pageSize);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -174,16 +192,7 @@ export default function PurchaseOrdersPage() {
     return <Badge variant={variants[status] || "secondary"} className="rounded-lg">{labels[status] || status}</Badge>;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des commandes...
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton title="Commandes Achats" kpiCount={3} />;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -204,6 +213,8 @@ export default function PurchaseOrdersPage() {
           <Plus className="mr-2 h-4 w-4" /> Nouvelle Commande
         </Button>
       </div>
+
+      {error && <ErrorMessage message={error} onRetry={fetchData} />}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="rounded-2xl">
@@ -262,10 +273,19 @@ export default function PurchaseOrdersPage() {
         </div>
       </div>
 
+      <DateRangeFilter from={dateFrom} to={dateTo} onChange={(f, t) => { setDateFrom(f); setDateTo(t); }} />
+
       <Card className="rounded-2xl">
-        <CardHeader><CardTitle>Liste des commandes ({filteredOrders.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Liste des commandes ({sortedData.length})</CardTitle></CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="hidden md:flex items-center gap-4 px-4 pb-2 border-b text-xs font-medium text-muted-foreground">
+            <SortableHeader label="Reference" sortKey="name" active={sortKey === "name"} direction={sortDir} onClick={toggleSort} className="w-40" />
+            <SortableHeader label="Fournisseur" sortKey="supplier_name" active={sortKey === "supplier_name"} direction={sortDir} onClick={toggleSort} className="flex-1" />
+            <SortableHeader label="Date" sortKey="transaction_date" active={sortKey === "transaction_date"} direction={sortDir} onClick={toggleSort} className="w-28" />
+            <SortableHeader label="Montant" sortKey="grand_total" active={sortKey === "grand_total"} direction={sortDir} onClick={toggleSort} className="w-32" />
+            <SortableHeader label="Statut" sortKey="status" active={sortKey === "status"} direction={sortDir} onClick={toggleSort} className="w-28" />
+          </div>
+          <div className="space-y-3 mt-3">
             {paginated.map(order => (
               <div key={order.name} className="flex items-center justify-between p-4 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer">
                 <div className="space-y-1 flex-1">
@@ -283,6 +303,19 @@ export default function PurchaseOrdersPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="text-lg font-bold mr-2">{(order.grand_total || 0).toLocaleString()} MAD</div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg h-8"
+                    title="Imprimer PDF"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      printDocumentPDF('Purchase Order', order.name)
+                        .catch(() => showToast("Erreur lors de la generation du PDF", "error"));
+                    }}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                  </Button>
                   {order.docstatus === 0 && (
                     <Button
                       variant="default"
@@ -336,7 +369,7 @@ export default function PurchaseOrdersPage() {
         </CardContent>
       </Card>
 
-      {filteredOrders.length === 0 && (
+      {sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucune commande trouvee</h3>
@@ -349,7 +382,7 @@ export default function PurchaseOrdersPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-muted-foreground">{startIndex + 1}-{Math.min(startIndex + pageSize, filteredOrders.length)} sur {filteredOrders.length}</p>
+          <p className="text-sm text-muted-foreground">{startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur {sortedData.length}</p>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg">
               <ChevronLeft className="h-4 w-4" />

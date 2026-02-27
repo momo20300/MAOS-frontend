@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, User, Briefcase, Building2, Mail, Phone, Calendar } from "lucide-react";
 import { DocumentHeader } from "@/components/ui/document-header";
+import { useFormValidation } from "@/lib/hooks/use-form-validation";
+import { FieldError } from "@/components/ui/field-error";
 
 interface EmployeeFormData {
   first_name: string;
@@ -73,6 +75,10 @@ export function EmployeeForm({
   mode = "create",
 }: EmployeeFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const { validateAll, onBlur, getError, clearErrors } = useFormValidation({
+    first_name: { required: true },
+    date_of_birth: { required: "La date de naissance est requise" },
+  });
   const getDefaultDate = () => new Date().toISOString().split("T")[0] as string;
 
   const [formData, setFormData] = React.useState<EmployeeFormData>({
@@ -105,7 +111,7 @@ export function EmployeeForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.first_name.trim()) return;
+    if (!validateAll({ first_name: formData.first_name, date_of_birth: formData.date_of_birth })) return;
 
     setLoading(true);
     try {
@@ -128,7 +134,7 @@ export function EmployeeForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) clearErrors(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-[550px]">
         <form onSubmit={handleSubmit}>
           {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
@@ -151,7 +157,7 @@ export function EmployeeForm({
               <div className="grid gap-2">
                 <Label htmlFor="first_name" className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  Prenom *
+                  Prenom <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="first_name"
@@ -160,9 +166,11 @@ export function EmployeeForm({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, first_name: e.target.value }))
                   }
+                  onBlur={(e) => onBlur("first_name", e.target.value)}
                   required
                   className="rounded-xl"
                 />
+                <FieldError message={getError("first_name")} />
               </div>
 
               <div className="grid gap-2">
@@ -204,7 +212,7 @@ export function EmployeeForm({
               <div className="grid gap-2">
                 <Label htmlFor="date_of_birth" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  Naissance
+                  Naissance <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="date_of_birth"
@@ -213,8 +221,10 @@ export function EmployeeForm({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, date_of_birth: e.target.value }))
                   }
+                  onBlur={(e) => onBlur("date_of_birth", e.target.value)}
                   className="rounded-xl"
                 />
+                <FieldError message={getError("date_of_birth")} />
               </div>
 
               <div className="grid gap-2">
@@ -327,7 +337,7 @@ export function EmployeeForm({
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={loading || !formData.first_name.trim()} className="rounded-xl">
+            <Button type="submit" disabled={loading} className="rounded-xl">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {mode === "create" ? "Creer l'employe" : "Enregistrer"}
             </Button>

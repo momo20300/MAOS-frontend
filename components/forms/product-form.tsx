@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Package, Tag, DollarSign } from "lucide-react";
 import { DocumentHeader } from "@/components/ui/document-header";
+import { useFormValidation } from "@/lib/hooks/use-form-validation";
+import { FieldError } from "@/components/ui/field-error";
 
 interface ProductFormData {
   item_code: string;
@@ -60,6 +62,11 @@ export function ProductForm({
   mode = "create",
 }: ProductFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const { validateAll, onBlur, getError, clearErrors } = useFormValidation({
+    item_code: { required: true },
+    item_name: { required: true },
+    standard_rate: { custom: (v) => { const n = Number(v); return n < 0 ? "Le prix doit etre >= 0" : null; } },
+  });
   const [formData, setFormData] = React.useState<ProductFormData>({
     item_code: initialData?.item_code || "",
     item_name: initialData?.item_name || "",
@@ -86,7 +93,7 @@ export function ProductForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.item_code.trim() || !formData.item_name.trim()) return;
+    if (!validateAll({ item_code: formData.item_code, item_name: formData.item_name, standard_rate: formData.standard_rate })) return;
 
     setLoading(true);
     try {
@@ -107,7 +114,7 @@ export function ProductForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) clearErrors(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-[550px]">
         <form onSubmit={handleSubmit}>
           {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
@@ -130,7 +137,7 @@ export function ProductForm({
               <div className="grid gap-2">
                 <Label htmlFor="item_code" className="flex items-center gap-2">
                   <Tag className="h-4 w-4 text-muted-foreground" />
-                  Code article *
+                  Code article <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="item_code"
@@ -139,16 +146,18 @@ export function ProductForm({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, item_code: e.target.value }))
                   }
+                  onBlur={(e) => onBlur("item_code", e.target.value)}
                   required
                   disabled={mode === "edit"}
                   className="rounded-xl"
                 />
+                <FieldError message={getError("item_code")} />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="item_name" className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-muted-foreground" />
-                  Nom du produit *
+                  Nom du produit <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="item_name"
@@ -157,9 +166,11 @@ export function ProductForm({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, item_name: e.target.value }))
                   }
+                  onBlur={(e) => onBlur("item_name", e.target.value)}
                   required
                   className="rounded-xl"
                 />
+                <FieldError message={getError("item_name")} />
               </div>
             </div>
 
@@ -226,8 +237,10 @@ export function ProductForm({
                       standard_rate: parseFloat(e.target.value) || 0,
                     }))
                   }
+                  onBlur={(e) => onBlur("standard_rate", e.target.value)}
                   className="rounded-xl"
                 />
+                <FieldError message={getError("standard_rate")} />
               </div>
 
               <div className="grid gap-2">
@@ -274,7 +287,7 @@ export function ProductForm({
             </Button>
             <Button
               type="submit"
-              disabled={loading || !formData.item_code.trim() || !formData.item_name.trim()}
+              disabled={loading}
               className="rounded-xl"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

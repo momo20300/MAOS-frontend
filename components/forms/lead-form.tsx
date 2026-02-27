@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, UserPlus, Building2, Mail, Phone, Target } from "lucide-react";
 import { DocumentHeader } from "@/components/ui/document-header";
+import { useFormValidation } from "@/lib/hooks/use-form-validation";
+import { FieldError } from "@/components/ui/field-error";
 
 interface LeadFormData {
   lead_name: string;
@@ -69,6 +71,10 @@ export function LeadForm({
   mode = "create",
 }: LeadFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const { validateAll, onBlur, getError, clearErrors } = useFormValidation({
+    lead_name: { required: true },
+    email_id: { pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Email invalide" } },
+  });
   const [formData, setFormData] = React.useState<LeadFormData>({
     lead_name: initialData?.lead_name || "",
     company_name: initialData?.company_name || "",
@@ -93,7 +99,7 @@ export function LeadForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.lead_name.trim()) return;
+    if (!validateAll({ lead_name: formData.lead_name, email_id: formData.email_id })) return;
 
     setLoading(true);
     try {
@@ -113,7 +119,7 @@ export function LeadForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) clearErrors(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
@@ -135,7 +141,7 @@ export function LeadForm({
             <div className="grid gap-2">
               <Label htmlFor="lead_name" className="flex items-center gap-2">
                 <UserPlus className="h-4 w-4 text-muted-foreground" />
-                Nom du contact *
+                Nom du contact <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="lead_name"
@@ -144,9 +150,11 @@ export function LeadForm({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, lead_name: e.target.value }))
                 }
+                onBlur={(e) => onBlur("lead_name", e.target.value)}
                 required
                 className="rounded-xl"
               />
+              <FieldError message={getError("lead_name")} />
             </div>
 
             <div className="grid gap-2">
@@ -179,8 +187,10 @@ export function LeadForm({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, email_id: e.target.value }))
                   }
+                  onBlur={(e) => onBlur("email_id", e.target.value)}
                   className="rounded-xl"
                 />
+                <FieldError message={getError("email_id")} />
               </div>
 
               <div className="grid gap-2">
@@ -258,7 +268,7 @@ export function LeadForm({
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={loading || !formData.lead_name.trim()} className="rounded-xl">
+            <Button type="submit" disabled={loading} className="rounded-xl">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {mode === "create" ? "Creer le lead" : "Enregistrer"}
             </Button>

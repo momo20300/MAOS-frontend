@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, ShoppingCart, User, Calendar, Trash2, Plus, Package } from "lucide-react";
 import { DocumentHeader } from "@/components/ui/document-header";
+import { useFormValidation } from "@/lib/hooks/use-form-validation";
+import { FieldError } from "@/components/ui/field-error";
 
 interface OrderItem {
   item_code: string;

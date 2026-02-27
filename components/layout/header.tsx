@@ -6,13 +6,23 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/src/context/SidebarContext";
 import { useAuth } from "@/lib/context/auth-context";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+import Link from "next/link";
 
 export default function Header() {
   const { isMobileOpen, toggleMobileSidebar } = useSidebar();
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const logoSrc = mounted && resolvedTheme === 'dark'
+    ? '/logo_darkmode.png'
+    : '/logo_lightmode.png';
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -33,7 +43,7 @@ export default function Header() {
   const roleBadge = user?.currentTenant?.role || "USER";
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+    <header className="flex h-14 items-center gap-4 border-b border-white/[0.06] bg-white/[0.03] backdrop-blur-sm px-4 lg:h-[60px] lg:px-6">
       {/* Hamburger menu button - visible only on mobile */}
       <Button
         variant="ghost"
@@ -45,9 +55,13 @@ export default function Header() {
         {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
-      <div className="flex-1">
-        <h1 className="text-lg font-semibold">Tableau de bord</h1>
-      </div>
+      {/* Logo — visible on desktop (hidden on mobile since sidebar has it) */}
+      <Link href="/dashboard" className="hidden md:flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logoSrc} alt="MAOS" className="h-7 w-auto" />
+      </Link>
+
+      <div className="flex-1" />
 
       <div className="flex items-center gap-2">
         {/* Notifications */}

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Get auth token from cookies
     const cookieStore = await cookies();
-    const token = cookieStore.get('maos_token')?.value;
+    const token = cookieStore.get('maos_access_token')?.value;
 
     if (!token) {
       console.warn('No auth token found, using direct OpenAI fallback');

@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getHrDashboard, HrDashboardData } from "@/lib/services/erpnext";
+import { DashboardSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
 import {
   Users, UserCheck, UserX, UserPlus,
   AlertTriangle, RefreshCw, BarChart3, Building2,
@@ -43,25 +45,12 @@ export default function HrDashboardPage() {
     fetchData(true);
   }, [fetchData]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-lg text-muted-foreground">Chargement des donnees RH...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton title="Ressources Humaines" />;
 
   if (error || !data) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4">
-          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto" />
-          <p className="text-lg">{error || "Donnees indisponibles"}</p>
-          <Button onClick={() => fetchData(true)}>Reessayer</Button>
-        </div>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <ErrorMessage message={error || "Donnees indisponibles"} onRetry={() => fetchData(true)} />
       </div>
     );
   }
@@ -93,8 +82,8 @@ export default function HrDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link href="/employees">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/employees" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Employes</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -108,8 +97,8 @@ export default function HrDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/employees">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/employees" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Actifs</CardTitle>
               <UserCheck className="h-4 w-4 text-muted-foreground" />
@@ -123,8 +112,8 @@ export default function HrDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/employees">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/employees" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Departs</CardTitle>
               <UserX className="h-4 w-4 text-muted-foreground" />
@@ -140,8 +129,8 @@ export default function HrDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/employees">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/employees" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Recrutements</CardTitle>
               <UserPlus className="h-4 w-4 text-muted-foreground" />

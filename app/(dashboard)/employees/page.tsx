@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { ErrorMessage } from "@/components/ui/error-message";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import { getEmployees, createEmployee, exportToCSV, printDocument, importFromCSV } from "@/lib/services/erpnext";
 import { EmployeeForm } from "@/components/forms";
 import {
@@ -72,10 +75,16 @@ export default function EmployeesPage() {
       emp.department?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData<Employee>(
+    filteredEmployees,
+    "employee_name",
+    "asc"
+  );
+
   const activeCount = employees.filter((e) => e.status === "Active").length;
-  const totalPages = Math.ceil(filteredEmployees.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + pageSize);
+  const paginatedEmployees = sortedData.slice(startIndex, startIndex + pageSize);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -104,7 +113,7 @@ export default function EmployeesPage() {
   };
 
   const handleExportCSV = () => {
-    exportToCSV(filteredEmployees, columns, "employes-maos");
+    exportToCSV(sortedData, columns, "employes-maos");
     showToast("Export CSV telecharge", "success");
   };
 
@@ -135,18 +144,11 @@ export default function EmployeesPage() {
   };
 
   const handlePrint = () => {
-    printDocument(filteredEmployees, columns, "Liste des Employes");
+    printDocument(sortedData, columns, "Liste des Employes");
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des employes...
-        </div>
-      </div>
-    );
+    return <PageSkeleton title="Employes" kpiCount={3} layout="list" />;
   }
 
   return (
@@ -227,7 +229,7 @@ export default function EmployeesPage() {
             />
           </div>
           <Badge variant="secondary" className="rounded-lg">
-            {filteredEmployees.length} resultat(s)
+            {sortedData.length} resultat(s)
           </Badge>
         </div>
 
@@ -262,7 +264,15 @@ export default function EmployeesPage() {
       {/* Table */}
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle>Liste des employes</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Liste des employes</CardTitle>
+            <div className="flex items-center gap-3 text-xs">
+              <span className="text-muted-foreground">Trier par:</span>
+              <SortableHeader label="Nom" sortKey="employee_name" active={sortKey === "employee_name"} direction={sortDir} onClick={toggleSort} />
+              <SortableHeader label="Departement" sortKey="department" active={sortKey === "department"} direction={sortDir} onClick={toggleSort} />
+              <SortableHeader label="Poste" sortKey="designation" active={sortKey === "designation"} direction={sortDir} onClick={toggleSort} />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -306,7 +316,7 @@ export default function EmployeesPage() {
       </Card>
 
       {/* Empty State */}
-      {!error && filteredEmployees.length === 0 && (
+      {!error && sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucun employe trouve</h3>
@@ -322,8 +332,8 @@ export default function EmployeesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
-            {startIndex + 1}-{Math.min(startIndex + pageSize, filteredEmployees.length)} sur{" "}
-            {filteredEmployees.length}
+            {startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur{" "}
+            {sortedData.length}
           </p>
           <div className="flex items-center gap-1">
             <Button

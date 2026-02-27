@@ -27,6 +27,7 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
   const isPlayingRef = useRef(false);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMutedRef = useRef(false);
+  const activeSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Keep mute ref in sync
   useEffect(() => {
@@ -88,11 +89,12 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.connect(ctx.destination);
+      activeSourceRef.current = source;
 
       try {
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => { source.stop(); resolve(); }, 10000);
-          source.onended = () => { clearTimeout(timeout); resolve(); };
+        await new Promise<void>((resolve) => {
+          const timeout = setTimeout(() => { try { source.stop(); } catch {} resolve(); }, 10000);
+          source.onended = () => { clearTimeout(timeout); activeSourceRef.current = null; resolve(); };
           source.start();
         });
       } catch {
@@ -106,6 +108,9 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
 
   // Cleanup resources — declared BEFORE startSession
   const cleanup = useCallback(() => {
+    // Guard against multiple calls
+    if (!socketRef.current && !mediaStreamRef.current && !audioContextRef.current) return;
+
     if (durationTimerRef.current) {
       clearInterval(durationTimerRef.current);
       durationTimerRef.current = null;
@@ -116,8 +121,14 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       socketRef.current = null;
     }
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current.getTracks().forEach((t) => {
+        try { t.stop(); } catch {}
+      });
       mediaStreamRef.current = null;
+    }
+    if (activeSourceRef.current) {
+      try { activeSourceRef.current.stop(); } catch {}
+      activeSourceRef.current = null;
     }
     if (audioContextRef.current) {
       audioContextRef.current.close().catch(() => {});
@@ -135,7 +146,8 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       const processor = audioCtx.createScriptProcessor(4096, 1, 1);
 
       processor.onaudioprocess = (e) => {
-        if (isMutedRef.current) return;
+        // Mute mic if user muted OR if MAOS is speaking (prevents audio feedback loop)
+        if (isMutedRef.current || isPlayingRef.current) return;
         const input = e.inputBuffer.getChannelData(0);
         const base64 = float32ToBase64PCM16(input);
         socketRef.current?.emit("audio.append", { audio: base64 });
@@ -234,6 +246,13 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       socket.on("vad.speech_started", () => {
         setStatus("listening");
         setAssistantTranscript("");
+        // Barge-in: immediately stop any playing audio
+        playbackBufferRef.current = [];
+        isPlayingRef.current = false;
+        if (activeSourceRef.current) {
+          try { activeSourceRef.current.stop(); } catch {}
+          activeSourceRef.current = null;
+        }
       });
 
       socket.on("vad.speech_stopped", () => {
@@ -262,7 +281,13 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       });
 
       socket.on("error", (data: { message: string }) => {
-        setError(data.message);
+        const msg = data.message || '';
+        // Ignore benign barge-in cancellation errors
+        if (msg.includes('cancellation') || msg.includes('no active response') || msg.includes('Cancellation failed')) {
+          console.log('[Voice] Barge-in cancel (benign):', msg);
+          return;
+        }
+        setError(msg);
       });
 
       socket.on("session.closed", () => {
@@ -282,16 +307,36 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
 
   // Stop session
   const stopSession = useCallback(() => {
-    socketRef.current?.emit("session.stop");
+    if (socketRef.current?.connected) {
+      socketRef.current.emit("session.stop");
+    }
     cleanup();
     setStatus("idle");
     onClose();
   }, [onClose, cleanup]);
 
-  // Cleanup on unmount
+  // Auto-start session on mount (no intermediate page)
+  // Guard against React Strict Mode double-mount in dev
+  const didStartRef = useRef(false);
   useEffect(() => {
+    if (didStartRef.current) return;
+    didStartRef.current = true;
+    startSession();
     return () => {
       cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Release mic on tab close / navigation away
+  useEffect(() => {
+    const handleBeforeUnload = () => cleanup();
+    const handlePageHide = () => cleanup();
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
     };
   }, [cleanup]);
 
@@ -427,34 +472,22 @@ export default function VoiceAgent({ onClose }: VoiceAgentProps) {
       </div>
 
       <div className="absolute bottom-12 flex items-center gap-4">
-        {status === "idle" ? (
-          <Button
-            onClick={startSession}
-            className="w-16 h-16 rounded-full bg-success-400 hover:bg-success-500 text-white"
-            size="icon"
-          >
-            <Phone className="w-7 h-7" />
-          </Button>
-        ) : (
-          <>
-            <Button
-              onClick={toggleMute}
-              variant={isMuted ? "destructive" : "outline"}
-              className="w-12 h-12 rounded-full"
-              size="icon"
-            >
-              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </Button>
+        <Button
+          onClick={toggleMute}
+          variant={isMuted ? "destructive" : "outline"}
+          className="w-12 h-12 rounded-full"
+          size="icon"
+        >
+          {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+        </Button>
 
-            <Button
-              onClick={stopSession}
-              className="w-16 h-16 rounded-full bg-danger-400 hover:bg-red-600 text-white"
-              size="icon"
-            >
-              <PhoneOff className="w-7 h-7" />
-            </Button>
-          </>
-        )}
+        <Button
+          onClick={stopSession}
+          className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white"
+          size="icon"
+        >
+          <PhoneOff className="w-7 h-7" />
+        </Button>
       </div>
     </div>
   );

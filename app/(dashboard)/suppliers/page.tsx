@@ -5,6 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import { getSuppliers, createSupplier, exportToCSV, printDocument, importFromCSV } from "@/lib/services/erpnext";
 import { SupplierForm } from "@/components/forms";
 import {
@@ -32,18 +36,33 @@ export default function SuppliersPage() {
   const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pageSize = 12;
 
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData<Supplier>(
+    filteredSuppliers,
+    "supplier_name",
+    "asc"
+  );
+
   const fetchSuppliers = async () => {
     setLoading(true);
-    const data = await getSuppliers();
-    setSuppliers(data);
-    setFilteredSuppliers(data);
-    setLoading(false);
+    setError(null);
+    try {
+      const data = await getSuppliers();
+      setSuppliers(data);
+      setFilteredSuppliers(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erreur de connexion au serveur";
+      setError(message);
+      console.error("Erreur chargement fournisseurs:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -60,9 +79,9 @@ export default function SuppliersPage() {
     setCurrentPage(1);
   }, [search, suppliers]);
 
-  const totalPages = Math.ceil(filteredSuppliers.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedSuppliers = filteredSuppliers.slice(startIndex, startIndex + pageSize);
+  const paginatedSuppliers = sortedData.slice(startIndex, startIndex + pageSize);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -86,7 +105,7 @@ export default function SuppliersPage() {
   };
 
   const handleExportCSV = () => {
-    exportToCSV(filteredSuppliers, columns, "fournisseurs-maos");
+    exportToCSV(sortedData, columns, "fournisseurs-maos");
     showToast("Export CSV telecharge", "success");
   };
 
@@ -115,18 +134,11 @@ export default function SuppliersPage() {
   };
 
   const handlePrint = () => {
-    printDocument(filteredSuppliers, columns, "Liste des Fournisseurs");
+    printDocument(sortedData, columns, "Liste des Fournisseurs");
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des fournisseurs...
-        </div>
-      </div>
-    );
+    return <PageSkeleton title="Fournisseurs" kpiCount={3} layout="grid" />;
   }
 
   return (
@@ -157,6 +169,9 @@ export default function SuppliersPage() {
           Nouveau Fournisseur
         </Button>
       </div>
+
+      {/* Error */}
+      {error && <ErrorMessage message={error} onRetry={fetchSuppliers} />}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -205,9 +220,6 @@ export default function SuppliersPage() {
               className="pl-9 h-10 rounded-xl bg-muted/50 border-0 focus-visible:ring-1"
             />
           </div>
-          <Badge variant="secondary" className="rounded-lg">
-            {filteredSuppliers.length} resultat(s)
-          </Badge>
         </div>
 
         <div className="flex items-center gap-2">
@@ -235,6 +247,18 @@ export default function SuppliersPage() {
             <Printer className="h-4 w-4 mr-2" />
             Imprimer
           </Button>
+        </div>
+      </div>
+
+      {/* Results count + Sort bar */}
+      <div className="flex items-center justify-between">
+        <Badge variant="secondary" className="rounded-lg">
+          {sortedData.length} resultat(s)
+        </Badge>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-muted-foreground">Trier par:</span>
+          <SortableHeader label="Nom" sortKey="supplier_name" active={sortKey === "supplier_name"} direction={sortDir} onClick={toggleSort} />
+          <SortableHeader label="Type" sortKey="supplier_type" active={sortKey === "supplier_type"} direction={sortDir} onClick={toggleSort} />
         </div>
       </div>
 
@@ -279,7 +303,7 @@ export default function SuppliersPage() {
       </div>
 
       {/* Empty State */}
-      {filteredSuppliers.length === 0 && (
+      {sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucun fournisseur trouve</h3>
@@ -295,8 +319,8 @@ export default function SuppliersPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
-            {startIndex + 1}-{Math.min(startIndex + pageSize, filteredSuppliers.length)} sur{" "}
-            {filteredSuppliers.length}
+            {startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur{" "}
+            {sortedData.length}
           </p>
           <div className="flex items-center gap-1">
             <Button

@@ -7,10 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   getPurchaseInvoices, getSuppliers, getItems, createPurchaseInvoice,
-  exportToCSV, printDocument,
+  exportToCSV, printDocument, printDocumentPDF,
   submitPurchaseInvoice, cancelPurchaseDocument, recordPaymentForInvoice,
 } from "@/lib/services/erpnext";
 import { PurchaseInvoiceForm } from "@/components/forms";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import {
   FileText, TrendingDown, Search, Plus, Download, Printer,
   FileSpreadsheet, ChevronLeft, ChevronRight, Calendar, CheckCircle, XCircle, CreditCard
@@ -48,24 +53,35 @@ export default function PurchaseInvoicesPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const pageSize = 10;
+
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData(filteredInvoices, "posting_date", "desc");
 
   const fetchData = async () => {
     setLoading(true);
-    const [invoicesData, suppliersData, itemsData] = await Promise.all([
-      getPurchaseInvoices(),
-      getSuppliers(),
-      getItems(),
-    ]);
-    setInvoices(invoicesData);
-    setFilteredInvoices(invoicesData);
-    setSuppliers(suppliersData);
-    setItems(itemsData);
-    setLoading(false);
+    setError(null);
+    try {
+      const [invoicesData, suppliersData, itemsData] = await Promise.all([
+        getPurchaseInvoices(),
+        getSuppliers(),
+        getItems(),
+      ]);
+      setInvoices(invoicesData);
+      setFilteredInvoices(invoicesData);
+      setSuppliers(suppliersData);
+      setItems(itemsData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement des factures");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -78,17 +94,19 @@ export default function PurchaseInvoicesPage() {
     if (statusFilter !== "all") {
       filtered = filtered.filter(inv => inv.status === statusFilter);
     }
+    if (dateFrom) filtered = filtered.filter(d => d.posting_date >= dateFrom);
+    if (dateTo) filtered = filtered.filter(d => d.posting_date <= dateTo);
     setFilteredInvoices(filtered);
     setCurrentPage(1);
-  }, [search, statusFilter, invoices]);
+  }, [search, statusFilter, invoices, dateFrom, dateTo]);
 
   const submittedInvoices = invoices.filter(inv => inv.docstatus === 1);
   const totalAmount = submittedInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
   const totalOutstanding = submittedInvoices.reduce((sum, inv) => sum + (inv.outstanding_amount || 0), 0);
   const unpaidCount = submittedInvoices.filter(inv => inv.status === "Unpaid").length;
-  const totalPages = Math.ceil(filteredInvoices.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginated = filteredInvoices.slice(startIndex, startIndex + pageSize);
+  const paginated = sortedData.slice(startIndex, startIndex + pageSize);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -176,16 +194,7 @@ export default function PurchaseInvoicesPage() {
     return <Badge variant={variants[status] || "secondary"} className="rounded-lg">{labels[status] || status}</Badge>;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des factures achats...
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton title="Factures Achats" kpiCount={4} />;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -206,6 +215,8 @@ export default function PurchaseInvoicesPage() {
           <Plus className="mr-2 h-4 w-4" /> Nouvelle Facture
         </Button>
       </div>
+
+      {error && <ErrorMessage message={error} onRetry={fetchData} />}
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="rounded-2xl">
@@ -267,19 +278,30 @@ export default function PurchaseInvoicesPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => { exportToCSV(filteredInvoices, columns, "factures-achats-maos"); showToast("Export CSV telecharge", "success"); }} className="rounded-xl">
+          <Button variant="outline" size="sm" onClick={() => { exportToCSV(sortedData, columns, "factures-achats-maos"); showToast("Export CSV telecharge", "success"); }} className="rounded-xl">
             <Download className="h-4 w-4 mr-2" /> Exporter CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => printDocument(filteredInvoices, columns, "Liste des Factures Achats")} className="rounded-xl">
+          <Button variant="outline" size="sm" onClick={() => printDocument(sortedData, columns, "Liste des Factures Achats")} className="rounded-xl">
             <Printer className="h-4 w-4 mr-2" /> Imprimer
           </Button>
         </div>
       </div>
 
+      <DateRangeFilter from={dateFrom} to={dateTo} onChange={(f, t) => { setDateFrom(f); setDateTo(t); }} />
+
       <Card className="rounded-2xl">
-        <CardHeader><CardTitle>Liste des factures ({filteredInvoices.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Liste des factures ({sortedData.length})</CardTitle></CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="hidden md:flex items-center gap-4 px-4 pb-2 border-b text-xs font-medium text-muted-foreground">
+            <SortableHeader label="Reference" sortKey="name" active={sortKey === "name"} direction={sortDir} onClick={toggleSort} className="w-36" />
+            <SortableHeader label="Fournisseur" sortKey="supplier_name" active={sortKey === "supplier_name"} direction={sortDir} onClick={toggleSort} className="flex-1" />
+            <SortableHeader label="Date" sortKey="posting_date" active={sortKey === "posting_date"} direction={sortDir} onClick={toggleSort} className="w-24" />
+            <SortableHeader label="Echeance" sortKey="due_date" active={sortKey === "due_date"} direction={sortDir} onClick={toggleSort} className="w-24" />
+            <SortableHeader label="Montant" sortKey="grand_total" active={sortKey === "grand_total"} direction={sortDir} onClick={toggleSort} className="w-28" />
+            <SortableHeader label="Reste" sortKey="outstanding_amount" active={sortKey === "outstanding_amount"} direction={sortDir} onClick={toggleSort} className="w-28" />
+            <SortableHeader label="Statut" sortKey="status" active={sortKey === "status"} direction={sortDir} onClick={toggleSort} className="w-24" />
+          </div>
+          <div className="space-y-3 mt-3">
             {paginated.map(invoice => (
               <div key={invoice.name} className="flex items-center justify-between p-4 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer">
                 <div className="space-y-1 flex-1">
@@ -306,6 +328,19 @@ export default function PurchaseInvoicesPage() {
                       <div className="text-sm text-danger-400">Reste: {invoice.outstanding_amount.toLocaleString()} MAD</div>
                     )}
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg h-8"
+                    title="Imprimer PDF"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      printDocumentPDF('Purchase Invoice', invoice.name)
+                        .catch(() => showToast("Erreur lors de la generation du PDF", "error"));
+                    }}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                  </Button>
                   {invoice.docstatus === 0 && (
                     <Button
                       variant="default"
@@ -349,7 +384,7 @@ export default function PurchaseInvoicesPage() {
         </CardContent>
       </Card>
 
-      {filteredInvoices.length === 0 && (
+      {sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucune facture trouvee</h3>
@@ -362,7 +397,7 @@ export default function PurchaseInvoicesPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-muted-foreground">{startIndex + 1}-{Math.min(startIndex + pageSize, filteredInvoices.length)} sur {filteredInvoices.length}</p>
+          <p className="text-sm text-muted-foreground">{startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur {sortedData.length}</p>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg">
               <ChevronLeft className="h-4 w-4" />

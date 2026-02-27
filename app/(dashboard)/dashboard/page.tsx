@@ -13,6 +13,7 @@ import {
   Factory, FolderKanban, CheckCircle, Headphones, Calculator,
   UserPlus, Target, ArrowRight, AlertTriangle, Boxes
 } from "lucide-react";
+import { DashboardSkeleton } from "@/components/ui/skeleton";
 import MaosInsights from "@/components/maos/MaosInsights";
 import {
   LineChart,
@@ -103,23 +104,14 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (initialLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-lg text-muted-foreground">Chargement du tableau de bord...</p>
-        </div>
-      </div>
-    );
-  }
+  if (initialLoading) return <DashboardSkeleton title="Tableau de Bord" />;
 
   const monthly = data?.monthly && data.monthly.length > 0 ? data.monthly : EMPTY_MONTHLY;
   const hasChartData = monthly.some(d => d.ventes > 0 || d.achats > 0);
   const margin = data?.finance.margin || 0;
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 pt-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -145,16 +137,16 @@ export default function DashboardPage() {
       )}
 
       {/* Row 1: Primary KPI Cards */}
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* CA Annuel */}
-        <Link href="/sales">
-          <Card className="py-2 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/sales" className="h-full">
+          <Card className="py-2 h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
               <CardTitle className="text-xs font-medium">CA Annuel</CardTitle>
               <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
             </CardHeader>
             <CardContent className="py-1 px-4">
-              <div className="text-xl font-bold text-emerald-600">
+              <div className="text-xl font-bold text-emerald-400">
                 {fmtK(data?.finance.revenue || 0)} MAD
               </div>
               <div className="flex items-center justify-between mt-1">
@@ -162,7 +154,7 @@ export default function DashboardPage() {
                 {data?.sales.thisMonthCA ? (
                   <div className="flex items-center gap-0.5">
                     <TrendingUp className="h-2.5 w-2.5 text-emerald-500" />
-                    <span className="text-[10px] text-emerald-600 font-medium">{fmtK(data.sales.thisMonthCA)} ce mois</span>
+                    <span className="text-[10px] text-emerald-500 font-medium">{fmtK(data.sales.thisMonthCA)} ce mois</span>
                   </div>
                 ) : null}
               </div>
@@ -171,14 +163,14 @@ export default function DashboardPage() {
         </Link>
 
         {/* Marge Nette */}
-        <Link href="/accounting">
-          <Card className="py-2 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/accounting" className="h-full">
+          <Card className="py-2 h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
               <CardTitle className="text-xs font-medium">Marge Nette</CardTitle>
               <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
             </CardHeader>
             <CardContent className="py-1 px-4">
-              <div className={`text-xl font-bold ${margin >= 10 ? "text-blue-600" : "text-orange-600"}`}>
+              <div className={`text-xl font-bold ${margin >= 10 ? "text-blue-400" : "text-orange-400"}`}>
                 {fmtK(data?.finance.profit || 0)} MAD
               </div>
               <div className="flex items-center justify-between mt-1">
@@ -192,14 +184,14 @@ export default function DashboardPage() {
         </Link>
 
         {/* Factures Impayees */}
-        <Link href="/invoices">
-          <Card className="py-2 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/invoices" className="h-full">
+          <Card className="py-2 h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
               <CardTitle className="text-xs font-medium">Factures Impayees</CardTitle>
               <FileText className="h-3.5 w-3.5 text-yellow-500" />
             </CardHeader>
             <CardContent className="py-1 px-4">
-              <div className={`text-xl font-bold ${(data?.sales.unpaidCount || 0) > 0 ? "text-yellow-600" : "text-muted-foreground"}`}>
+              <div className={`text-xl font-bold ${(data?.sales.unpaidCount || 0) > 0 ? "text-yellow-400" : "text-muted-foreground"}`}>
                 {data?.sales.unpaidCount || 0}
               </div>
               <div className="flex items-center justify-between mt-1">
@@ -207,7 +199,7 @@ export default function DashboardPage() {
                   {data?.sales.unpaidAmount ? `${fmtK(data.sales.unpaidAmount)} MAD` : "A recouvrer"}
                 </p>
                 {(data?.sales.unpaidCount || 0) > 0 && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-yellow-600 border-yellow-300">En attente</Badge>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-yellow-500 border-yellow-500/30">En attente</Badge>
                 )}
               </div>
             </CardContent>
@@ -215,14 +207,14 @@ export default function DashboardPage() {
         </Link>
 
         {/* Stock Critique */}
-        <Link href="/stock">
-          <Card className="py-2 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/stock" className="h-full">
+          <Card className="py-2 h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between py-1 px-4">
               <CardTitle className="text-xs font-medium">Stock Critique</CardTitle>
               <AlertCircle className="h-3.5 w-3.5 text-red-500" />
             </CardHeader>
             <CardContent className="py-1 px-4">
-              <div className={`text-xl font-bold ${(data?.stock.criticalCount || 0) > 0 ? "text-red-600" : "text-muted-foreground"}`}>
+              <div className={`text-xl font-bold ${(data?.stock.criticalCount || 0) > 0 ? "text-red-400" : "text-muted-foreground"}`}>
                 {data?.stock.criticalCount || 0}
               </div>
               <div className="flex items-center justify-between mt-1">
@@ -248,11 +240,11 @@ export default function DashboardPage() {
         <CardContent className="pb-2">
           <div className="h-[150px] w-full" style={{ minWidth: 0 }}>
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <LineChart data={monthly} margin={{ top: 5, right: 45, left: 0, bottom: 5 }}>
+              <LineChart data={monthly} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} className="text-muted-foreground" />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} className="text-muted-foreground" />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} stroke="#f59e0b" />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9 }} width={35} tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} stroke="#f59e0b" />
                 <Tooltip
                   formatter={(value) => [`${Number(value).toLocaleString()} MAD`]}
                   contentStyle={{ fontSize: 12 }}
@@ -358,7 +350,7 @@ export default function DashboardPage() {
       {/* Bottom: Module Summary Grid */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Modules</h3>
-        <div className="grid grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {MODULE_CARDS.map((mod) => {
             const Icon = mod.icon;
             const metric = data ? getModuleMetric(data, mod.key) : "...";

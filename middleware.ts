@@ -45,6 +45,6 @@ export const config = {
      * - Static assets (images, fonts, etc.)
      * - api routes (handled separately)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$|.*\\.ico$|.*\\.webp$|.*\\.woff$|.*\\.woff2$|.*\\.ttf$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|manifest\\.json|sw\\.js|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$|.*\\.ico$|.*\\.webp$|.*\\.woff$|.*\\.woff2$|.*\\.ttf$).*)',
   ],
 };

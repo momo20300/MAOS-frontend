@@ -126,12 +126,15 @@ export function getStoredUser(): AuthUser | null {
  */
 export function clearAuthData(): void {
   if (typeof window !== 'undefined') {
-    // Clear this tab's session
+    // Clear this tab's session (per-tab isolation via sessionStorage)
     sessionStorage.removeItem(ACCESS_TOKEN_KEY);
     sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
-    // Clear the cookie
-    document.cookie = 'maos_access_token=; path=/; max-age=0; SameSite=Lax';
+    // DO NOT clear the cookie here — it's shared across tabs.
+    // Clearing it would log out other tabs that are still active.
+    // The cookie is only used by middleware for route protection;
+    // real auth is per-tab via sessionStorage + Authorization header.
+    // The cookie will be refreshed on next login or expire naturally.
   }
 }
 

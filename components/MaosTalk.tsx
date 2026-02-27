@@ -1,50 +1,119 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, memo } from "react";
-import { Send, Sparkles, Loader2, Mic, Upload, X, FileText, Image, File, Download, Minimize2, Maximize2, MessageSquare, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Send, Sparkles, Loader2, Phone, X, FileText, Image, File, Download, Volume2, VolumeX, Copy, Check, Paperclip, MessageSquare, Pin, PinOff } from "lucide-react";
 import { sendMessageToAI, sendMessageStreamingSSE, Message, fileToBase64, AttachedFile, StreamingCallbacks } from "@/lib/services/ai";
 import dynamic from "next/dynamic";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const VoiceAgent = dynamic(() => import("./VoiceAgent"), { ssr: false });
 
-// Memoized message component — prevents re-rendering unchanged messages during streaming
-const ChatBubble = memo(function ChatBubble({ msg, onDownloadPDF }: { msg: Message; onDownloadPDF: (data: string, filename: string) => void }) {
+// Code block with copy button
+const CodeBlock = memo(function CodeBlock({ children, className }: { children: string; className?: string }) {
+  const [copied, setCopied] = useState(false);
+  const lang = className?.replace('language-', '') || '';
+  const handleCopy = () => {
+    navigator.clipboard.writeText(children).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
   return (
-    <div className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-      {msg.role === "assistant" && (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center flex-shrink-0">
-          <Sparkles className="w-4 h-4 text-white" />
-        </div>
-      )}
-      <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2 ${msg.role === "user" ? "bg-success-400 text-white" : "bg-muted"}`}
-        dir={msg.direction || 'ltr'}
+    <div className="relative group my-3">
+      {lang && <span className="absolute top-2 left-3 text-[10px] text-gray-500 uppercase">{lang}</span>}
+      <button
+        onClick={handleCopy}
+        className="absolute top-2 right-2 p-1 rounded bg-white/[0.06] opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Copier"
       >
-        {msg.files && msg.files.length > 0 && (
-          <div className="mb-2 space-y-1">
-            {msg.files.map((file, fileIdx) => (
-              <div
-                key={fileIdx}
-                className={`flex items-center gap-2 text-xs px-2 py-1 rounded ${msg.role === "user" ? "bg-success-500/50" : "bg-muted-foreground/10"}`}
-              >
-                <FileText className="w-4 h-4" />
-                <span className="font-medium">{file.name}</span>
-                <span className="opacity-70">({Math.round(file.size / 1024)} KB)</span>
-              </div>
-            ))}
+        {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+      </button>
+      <pre className="bg-black/30 rounded-lg p-4 pt-7 overflow-x-auto text-sm leading-relaxed">
+        <code>{children}</code>
+      </pre>
+    </div>
+  );
+});
+
+// Memoized message component — modern Claude-like design
+const ChatBubble = memo(function ChatBubble({ msg, onDownloadPDF, onSpeak, isSpeaking }: {
+  msg: Message;
+  onDownloadPDF: (data: string, filename: string) => void;
+  onSpeak?: (text: string) => void;
+  isSpeaking?: boolean;
+}) {
+  if (msg.role === "user") {
+    return (
+      <div className="flex justify-end mb-4">
+        <div className="max-w-[85%]">
+          {msg.files && msg.files.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5 justify-end">
+              {msg.files.map((file, fileIdx) => (
+                <span key={fileIdx} className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-white/[0.06] text-gray-400">
+                  <Paperclip className="w-3 h-3" />
+                  {file.name}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="bg-white/[0.06] rounded-2xl px-4 py-3" dir={msg.direction || 'ltr'}>
+            <p className="text-[15px] leading-relaxed text-gray-200">{msg.content}</p>
           </div>
-        )}
-        <p className={`text-sm whitespace-pre-wrap ${msg.direction === 'rtl' ? 'text-right' : ''}`}>{msg.content}</p>
-        {msg.pdf && msg.pdf.data && (
-          <Button
-            onClick={() => onDownloadPDF(msg.pdf!.data, msg.pdf!.filename)}
-            className="mt-3 bg-success-400 hover:bg-success-500 text-white"
-            size="sm"
+        </div>
+      </div>
+    );
+  }
+
+  // Assistant message — no bubble, clean text with markdown
+  return (
+    <div className="mb-6" dir={msg.direction || 'ltr'}>
+      <div className="max-w-3xl">
+        <div className="text-[15px] leading-[1.7] text-gray-200 prose prose-invert prose-sm max-w-none
+          prose-p:my-2 prose-headings:text-gray-100 prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2
+          prose-strong:text-gray-100 prose-code:text-emerald-400 prose-code:bg-black/20 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
+          prose-table:border-white/[0.08] prose-th:border-white/[0.08] prose-td:border-white/[0.08] prose-th:px-3 prose-th:py-1.5 prose-td:px-3 prose-td:py-1.5
+          prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code({ className, children, ...props }) {
+                const isBlock = className || (typeof children === 'string' && children.includes('\n'));
+                if (isBlock) {
+                  return <CodeBlock className={className}>{String(children).replace(/\n$/, '')}</CodeBlock>;
+                }
+                return <code className={className} {...props}>{children}</code>;
+              },
+            }}
           >
-            <Download className="w-4 h-4 mr-2" />
-            T\u00e9l\u00e9charger le PDF
-          </Button>
+            {msg.content}
+          </ReactMarkdown>
+        </div>
+
+        {msg.pdf && msg.pdf.data && (
+          <button
+            onClick={() => onDownloadPDF(msg.pdf!.data, msg.pdf!.filename)}
+            className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors text-sm font-medium"
+          >
+            <Download className="w-4 h-4" />
+            Télécharger le PDF
+          </button>
+        )}
+
+        {msg.content && onSpeak && (
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              onClick={() => onSpeak(msg.content)}
+              className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
+              title={isSpeaking ? "Arrêter la lecture" : "Lire à voix haute"}
+            >
+              {isSpeaking ? (
+                <Volume2 className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-gray-500 hover:text-gray-300" />
+              )}
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -60,19 +129,21 @@ interface UploadedFile {
 
 export default function MaosTalk() {
   const [message, setMessage] = useState("");
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [pack, setPack] = useState<string>("PRO");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [useStreaming, setUseStreaming] = useState(true);
+  const [useStreaming] = useState(true);
   const [voiceMode, setVoiceMode] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [speakingMsgContent, setSpeakingMsgContent] = useState<string | null>(null);
+  const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const [sessionId] = useState(() => `maos-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
-  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const collapseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileDialogOpenRef = useRef(false);
 
   // TTS audio playback queue (max 50 chunks to prevent memory leak)
   const audioQueueRef = useRef<string[]>([]);
@@ -125,6 +196,53 @@ export default function MaosTalk() {
     }
   }, []);
 
+  // TTS speak toggle for individual messages
+  const speakMessage = useCallback(async (text: string) => {
+    // If already speaking this message, stop
+    if (speakingMsgContent === text) {
+      if (ttsAudioRef.current) {
+        ttsAudioRef.current.pause();
+        ttsAudioRef.current.src = '';
+        ttsAudioRef.current = null;
+      }
+      setSpeakingMsgContent(null);
+      return;
+    }
+    // Stop any previous TTS
+    if (ttsAudioRef.current) {
+      ttsAudioRef.current.pause();
+      ttsAudioRef.current.src = '';
+      ttsAudioRef.current = null;
+    }
+    setSpeakingMsgContent(text);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const res = await fetch(`${API_URL}/api/speech/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, lang: "fr" }),
+      });
+      if (!res.ok) { setSpeakingMsgContent(null); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      ttsAudioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        ttsAudioRef.current = null;
+        setSpeakingMsgContent(null);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        ttsAudioRef.current = null;
+        setSpeakingMsgContent(null);
+      };
+      await audio.play();
+    } catch {
+      setSpeakingMsgContent(null);
+    }
+  }, [speakingMsgContent]);
+
   // Flush buffered streaming text to state (called every 50ms during streaming)
   const flushStreamBuffer = useCallback(() => {
     const buffered = streamBufferRef.current;
@@ -144,49 +262,65 @@ export default function MaosTalk() {
     });
   }, []);
 
-  // Debounced auto-hide: only hides when input is empty AND unfocused for 10s
-  const resetHideTimer = useCallback(() => {
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
-    if (isMinimized) return;
-    hideTimerRef.current = setTimeout(() => {
-      // NEVER hide if textarea has text or focus
+  // Auto-collapse: 15s of no interaction → collapse chat panel
+  const resetCollapseTimer = useCallback(() => {
+    if (isPinned) return; // Pinned → never auto-collapse
+    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    collapseTimerRef.current = setTimeout(() => {
+      if (isPinned) return;
+      if (fileDialogOpenRef.current) return; // File dialog open
       const hasText = textareaRef.current ? textareaRef.current.value.length > 0 : false;
       const hasFocus = document.activeElement === textareaRef.current;
       if (!hasText && !hasFocus) {
-        setIsMinimized(true);
+        setIsCollapsed(true);
       }
-    }, 10000);
-  }, [isMinimized]);
+    }, 15000);
+  }, [isPinned]);
 
-  // Start auto-hide timer when chat becomes visible (not minimized)
+  // Pause collapse timer while MAOS is streaming
   useEffect(() => {
-    if (!isMinimized) {
-      resetHideTimer();
+    if (isLoading) {
+      if (collapseTimerRef.current) { clearTimeout(collapseTimerRef.current); collapseTimerRef.current = null; }
+    } else if (!isCollapsed) {
+      resetCollapseTimer();
     }
-    return () => {
-      if (hideTimerRef.current) {
-        clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
+  }, [isLoading, isCollapsed, resetCollapseTimer]);
+
+  // Start collapse timer when panel opens, scroll to bottom
+  useEffect(() => {
+    if (!isCollapsed) {
+      resetCollapseTimer();
+      // Scroll to bottom so user sees latest messages after re-open
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 100);
+    }
+    return () => { if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current); };
+  }, [isCollapsed, resetCollapseTimer]);
+
+  // Clear collapse timer when pinned
+  useEffect(() => {
+    if (isPinned && collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+      collapseTimerRef.current = null;
+    }
+  }, [isPinned]);
+
+  // Track file dialog open/close to pause collapse timer
+  useEffect(() => {
+    const onWindowFocus = () => {
+      if (fileDialogOpenRef.current) {
+        fileDialogOpenRef.current = false;
+        if (!isPinned && !isCollapsed) resetCollapseTimer();
       }
     };
-  }, [isMinimized, resetHideTimer]);
-
-  // Cancel hide timer when loading (keep bar visible)
-  useEffect(() => {
-    if (isLoading && hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
-  }, [isLoading]);
+    window.addEventListener('focus', onWindowFocus);
+    return () => window.removeEventListener('focus', onWindowFocus);
+  }, [isPinned, isCollapsed, resetCollapseTimer]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       if (streamFlushTimerRef.current) clearTimeout(streamFlushTimerRef.current);
+      if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
     };
   }, []);
 
@@ -210,9 +344,9 @@ export default function MaosTalk() {
   useEffect(() => {
     const welcomeMessage: Message = {
       role: "assistant",
-      content: "Bonjour. Je suis MAOS, votre assistant num\u00e9rique. Comment puis-je vous aider ?",
+      content: "Bonjour. Je suis MAOS, votre assistant numérique. Comment puis-je vous aider ?",
       lang: "fr",
-      langName: "Fran\u00e7ais",
+      langName: "Français",
       direction: "ltr",
     };
     setMessages([welcomeMessage]);
@@ -277,7 +411,7 @@ export default function MaosTalk() {
         } else if (ext === 'pdf') {
           content = `[Fichier PDF: ${file.name}] - Extraction du contenu en cours...`;
         } else if (file.type.startsWith('image/')) {
-          content = `[Image: ${file.name}] - Image upload\u00e9e pour analyse visuelle`;
+          content = `[Image: ${file.name}] - Image uploadée pour analyse visuelle`;
         } else {
           content = `[Fichier: ${file.name}] - Type: ${file.type || 'inconnu'}`;
         }
@@ -345,7 +479,7 @@ export default function MaosTalk() {
   };
 
   // ===== STREAMING SEND =====
-  const handleSendStreaming = async (textToSend: string) => {
+  const handleSendStreaming = async (textToSend: string, filesToSend?: Array<{ name: string; type: string; content: string }>, attachedFiles?: AttachedFile[]) => {
     if (!textToSend.trim() || isLoading) return;
 
     stopAudio(); // Stop any playing audio from previous response
@@ -354,6 +488,7 @@ export default function MaosTalk() {
     const userMessage: Message = {
       role: "user" as const,
       content: textToSend.trim(),
+      files: attachedFiles,
     };
 
     const newMessages = [...messages, userMessage];
@@ -437,7 +572,7 @@ export default function MaosTalk() {
           if (lastMsg && lastMsg.role === "assistant") {
             updated[lastIndex] = {
               ...lastMsg,
-              content: "Une erreur est survenue. Veuillez r\u00e9essayer.",
+              content: "Une erreur est survenue. Veuillez réessayer.",
             };
           }
           return updated;
@@ -446,7 +581,7 @@ export default function MaosTalk() {
     };
 
     try {
-      await sendMessageStreamingSSE(textToSend.trim(), callbacks, { wantAudio: true, sessionId });
+      await sendMessageStreamingSSE(textToSend.trim(), callbacks, { wantAudio: false, sessionId, files: filesToSend });
     } catch {
       setIsLoading(false);
     }
@@ -460,6 +595,27 @@ export default function MaosTalk() {
 
     if (useStreaming && uploadedFiles.length === 0 && message.trim()) {
       return handleSendStreaming(message.trim());
+    }
+
+    // Use streaming even with files (files sent as text content)
+    if (useStreaming && uploadedFiles.length > 0) {
+      const nonImageFiles = uploadedFiles.filter(f => !f.file.type.startsWith('image/'));
+      const hasOnlyParsedFiles = nonImageFiles.length > 0 && nonImageFiles.every(f => f.content && !f.analyzing);
+
+      if (hasOnlyParsedFiles) {
+        const streamFiles = nonImageFiles.map(f => ({
+          name: f.file.name,
+          type: f.file.type || 'text/plain',
+          content: f.content!.substring(0, 50000),
+        }));
+        const attached: AttachedFile[] = streamFiles.map(f => ({
+          name: f.name, type: f.type, size: f.content.length, content: f.content,
+        }));
+        const text = message.trim() || "Analyse ce fichier";
+        setMessage("");
+        setUploadedFiles([]);
+        return handleSendStreaming(text, streamFiles, attached);
+      }
     }
 
     let userContent = message.trim();
@@ -533,7 +689,7 @@ export default function MaosTalk() {
     } catch {
       setMessages([...newMessages, {
         role: "assistant" as const,
-        content: "Une erreur technique est survenue. Veuillez r\u00e9essayer."
+        content: "Une erreur technique est survenue. Veuillez réessayer."
       }]);
     } finally {
       setIsLoading(false);
@@ -546,6 +702,12 @@ export default function MaosTalk() {
       handleSend();
     }
   };
+
+  // Any interaction resets the collapse timer
+  const onInteraction = useCallback(() => {
+    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    resetCollapseTimer();
+  }, [resetCollapseTimer]);
 
   return (
     <>
@@ -563,222 +725,191 @@ export default function MaosTalk() {
         className="hidden"
       />
 
-      {/* MODE MINIMIS\u00c9 - Juste un bouton flottant */}
-      {isMinimized && (
+      {/* COLLAPSED — floating bubble */}
+      {isCollapsed && (
         <button
-          onClick={() => { setIsMinimized(false); resetHideTimer(); }}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center shadow-2xl z-50 hover:scale-110 transition-transform"
+          onClick={() => setIsCollapsed(false)}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-600 flex items-center justify-center shadow-lg hover:scale-105 transition-all duration-300 ease-in-out"
           title="Ouvrir MAOS Chat"
         >
           <MessageSquare className="w-6 h-6 text-white" />
           {messages.length > 1 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-danger-400 rounded-full text-white text-xs flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold">
               {messages.length - 1}
             </span>
           )}
         </button>
       )}
 
-      {/* MODE NORMAL - Chat complet */}
-      {!isMinimized && (
-        <>
-          {/* Historique messages */}
-          {isExpanded && messages.length > 0 && (
-            <div className="fixed bottom-32 left-0 md:left-64 right-0 mx-auto max-w-4xl bg-background/95 backdrop-blur-sm border rounded-t-xl p-4 max-h-96 overflow-y-auto shadow-2xl z-50">
-              {/* Titre de l'historique */}
-              <div className="flex justify-between items-center mb-3 pb-2 border-b">
-                <span className="text-xs text-muted-foreground">Conversation MAOS</span>
-                <span className="text-xs text-muted-foreground">{messages.length} messages</span>
-              </div>
-              <div className="space-y-4">
-                {messages.map((msg, idx) => (
-                  <ChatBubble key={idx} msg={msg} onDownloadPDF={downloadPDF} />
-                ))}
-                {isLoading && (
-                  <div className="flex gap-3 justify-start">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center flex-shrink-0 animate-pulse">
-                      <Sparkles className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="bg-muted rounded-2xl px-4 py-2">
-                      <p className="text-sm text-muted-foreground">MAOS r\u00e9fl\u00e9chit...</p>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </div>
-          )}
+      {/* EXPANDED — chat panel */}
+      <div
+        className={`flex flex-col h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out
+          ${isCollapsed ? 'w-0 opacity-0 overflow-hidden pointer-events-none' : 'w-[380px] md:w-[420px] opacity-100'}
+          max-md:fixed max-md:inset-0 max-md:z-50 max-md:w-full max-md:h-full max-md:bg-[#0a0f1e]
+        `}
+        onClick={onInteraction}
+        onKeyDown={onInteraction}
+        onScroll={onInteraction}
+      >
+        {/* Header with pin button */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.08] shrink-0">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span className="text-sm font-medium text-gray-200">MAOS</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsPinned(p => !p)}
+              className={`p-1.5 rounded-lg transition-colors ${isPinned ? 'text-emerald-400 bg-emerald-500/10' : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.06]'}`}
+              title={isPinned ? 'Désépingler (auto-collapse)' : 'Épingler (garder ouvert)'}
+            >
+              {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => setIsCollapsed(true)}
+              className="p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors md:hidden"
+            >
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+        </div>
 
-          {/* Barre de chat */}
-          <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-background/95 backdrop-blur-sm border-t shadow-2xl z-50">
-            <div className="max-w-4xl mx-auto p-4">
-              {/* Fichiers upload\u00e9s */}
-              {uploadedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {uploadedFiles.map((f, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${f.analyzing
-                        ? 'bg-yellow-100 border border-yellow-300 dark:bg-yellow-900/30'
-                        : f.content
-                          ? 'bg-success-50 border border-success-200 dark:bg-green-900/30'
-                          : 'bg-muted'
-                        }`}
-                    >
-                      {f.analyzing ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-yellow-600" />
-                      ) : f.preview ? (
-                        <img src={f.preview} alt="" className="w-8 h-8 object-cover rounded" />
-                      ) : (
-                        getFileIcon(f.file.type)
-                      )}
-                      <span className="max-w-32 truncate">{f.file.name}</span>
-                      {f.analyzing && <span className="text-yellow-600 text-xs">Analyse...</span>}
-                      {f.content && !f.analyzing && (
-                        <span className="text-success-400 text-xs font-medium">\u2713 Pr\u00eat ({Math.round(f.content.length / 1024)}KB)</span>
-                      )}
-                      <button
-                        onClick={() => removeFile(f.file)}
-                        className="text-muted-foreground hover:text-danger-400"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+        {/* Message history — scrollable area */}
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="max-w-3xl mx-auto">
+            {messages.map((msg, idx) => (
+              <ChatBubble
+                key={idx}
+                msg={msg}
+                onDownloadPDF={downloadPDF}
+                onSpeak={speakMessage}
+                isSpeaking={speakingMsgContent === msg.content}
+              />
+            ))}
+
+            {/* Typing indicator — 3 animated dots */}
+            {isLoading && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm">MAOS réfléchit</span>
+                  <span className="flex gap-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
                 </div>
-              )}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
 
-              <div className="flex items-end gap-2">
-                <div className="flex-shrink-0 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-success-400 to-success-300 flex items-center justify-center">
-                    {isLoading ? (
-                      <Loader2 className="w-5 h-5 text-white animate-spin" />
-                    ) : (
-                      <Sparkles className="w-5 h-5 text-white" />
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={textareaRef}
-                    value={message}
-                    onChange={(e) => { setMessage(e.target.value); resetHideTimer(); }}
-                    onKeyDown={handleKeyDown}
-                    onFocus={() => {
-                      setIsExpanded(true);
-                      // Cancel timer entirely — never hide while focused
-                      if (hideTimerRef.current) { clearTimeout(hideTimerRef.current); hideTimerRef.current = null; }
-                    }}
-                    onBlur={() => {
-                      // Only start hide timer if input is empty
-                      if (!message.trim()) resetHideTimer();
-                    }}
-                    placeholder="Parle \u00e0 MAOS..."
-                    disabled={isLoading}
-                    className="w-full resize-none rounded-xl border bg-background px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-success-400 transition-all overflow-hidden scrollbar-hide disabled:opacity-50"
-                    rows={1}
-                    style={{
-                      minHeight: "48px",
-                      maxHeight: "144px"
-                    }}
-                  />
-
-                  <Button
-                    size="icon"
-                    onClick={handleSend}
-                    disabled={(!message.trim() && uploadedFiles.length === 0) || isLoading || uploadedFiles.some(f => f.analyzing)}
-                    className="absolute right-2 bottom-2 h-8 w-8 rounded-lg bg-success-400 hover:bg-success-500 disabled:opacity-50 transition-all"
-                    title={uploadedFiles.some(f => f.analyzing) ? "Analyse du fichier en cours..." : "Envoyer"}
+        {/* Input area — fixed at bottom */}
+        <div className="shrink-0 px-4 py-3 border-t border-white/[0.08]">
+          <div className="max-w-3xl mx-auto">
+            {/* Uploaded files */}
+            {uploadedFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {uploadedFiles.map((f, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${f.analyzing
+                      ? 'bg-amber-500/10 border border-amber-500/20'
+                      : f.content
+                        ? 'bg-emerald-500/10 border border-emerald-500/20'
+                        : 'bg-white/[0.04] border border-white/[0.08]'
+                      }`}
                   >
-                    {uploadedFiles.some(f => f.analyzing) ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    {f.analyzing ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                    ) : f.preview ? (
+                      <img src={f.preview} alt="" className="w-8 h-8 object-cover rounded" />
                     ) : (
-                      <Send className="h-4 w-4" />
+                      getFileIcon(f.file.type)
                     )}
-                  </Button>
-                </div>
+                    <span className="max-w-32 truncate text-gray-300">{f.file.name}</span>
+                    {f.analyzing && <span className="text-amber-400 text-xs">Analyse...</span>}
+                    {f.content && !f.analyzing && (
+                      <span className="text-emerald-400 text-xs font-medium">Prêt</span>
+                    )}
+                    <button
+                      onClick={() => removeFile(f.file)}
+                      className="text-gray-500 hover:text-red-400 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-                {/* Bouton Agent Vocal (GPT-Realtime) */}
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={() => { setVoiceMode(true); resetHideTimer(); }}
-                  disabled={isLoading}
-                  className="h-10 w-10 rounded-lg flex-shrink-0 mb-2 hover:bg-success-50 hover:border-success-400"
-                  title="Agent vocal MAOS"
-                >
-                  <Mic className="h-5 w-5 text-success-400" />
-                </Button>
+            {/* Input box */}
+            <div className="relative bg-white/[0.05] border border-white/[0.08] rounded-2xl transition-colors focus-within:border-white/[0.15]">
+              <textarea
+                ref={textareaRef}
+                value={message}
+                onChange={(e) => { setMessage(e.target.value); onInteraction(); }}
+                onKeyDown={handleKeyDown}
+                onFocus={onInteraction}
+                placeholder="Demandez à MAOS..."
+                disabled={isLoading}
+                className="w-full resize-none bg-transparent px-4 py-3 pr-24 text-[15px] text-gray-200 placeholder-gray-500 focus:outline-none disabled:opacity-50 overflow-hidden scrollbar-hide"
+                rows={1}
+                style={{ minHeight: "48px", maxHeight: "144px" }}
+              />
 
-                {/* Bouton Upload */}
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
+              {/* Action buttons — inside input box, bottom right */}
+              <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                {/* Upload button */}
+                <button
+                  onClick={() => {
+                    fileDialogOpenRef.current = true;
+                    if (collapseTimerRef.current) { clearTimeout(collapseTimerRef.current); collapseTimerRef.current = null; }
+                    fileInputRef.current?.click();
+                  }}
                   disabled={isLoading}
-                  className="h-10 w-10 rounded-lg flex-shrink-0 mb-2 hover:bg-success-50 hover:border-success-400"
+                  className="p-2 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-colors disabled:opacity-50"
                   title="Joindre un fichier"
                 >
-                  <Upload className="h-5 w-5 text-success-400" />
-                </Button>
-              </div>
+                  <Paperclip className="w-[18px] h-[18px]" />
+                </button>
 
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-muted-foreground">
-                    MAOS AI {pack}
-                  </p>
-                  <span className="text-xs text-muted-foreground">\u2022</span>
+                {/* Voice call button */}
+                <button
+                  onClick={() => setVoiceMode(true)}
+                  disabled={isLoading}
+                  className="p-2 rounded-lg text-gray-500 hover:text-emerald-400 hover:bg-white/[0.06] transition-colors disabled:opacity-50"
+                  title="Appeler MAOS"
+                >
+                  <Phone className="w-[18px] h-[18px]" />
+                </button>
+
+                {/* Send button — only visible when text is present */}
+                {(message.trim() || uploadedFiles.length > 0) && (
                   <button
-                    onClick={() => setUseStreaming(!useStreaming)}
-                    className={`text-xs flex items-center gap-1 ${useStreaming ? 'text-success-400 font-medium' : 'text-muted-foreground'}`}
-                    title={useStreaming ? 'Mode streaming activ\u00e9 (r\u00e9ponses rapides)' : 'Activer le streaming'}
+                    onClick={handleSend}
+                    disabled={isLoading || uploadedFiles.some(f => f.analyzing)}
+                    className="p-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50"
+                    title="Envoyer"
                   >
-                    <Zap className={`w-3 h-3 ${useStreaming ? 'fill-current' : ''}`} />
-                    {useStreaming ? 'Stream' : 'Standard'}
+                    {uploadedFiles.some(f => f.analyzing) ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </button>
-                  <span className="text-xs text-muted-foreground">\u2022</span>
-                  {/* Boutons R\u00e9duire et Masquer */}
-                  {isExpanded ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => { setIsExpanded(false); resetHideTimer(); }}
-                      className="h-5 px-2 text-xs text-muted-foreground hover:text-primary"
-                    >
-                      <Minimize2 className="w-3 h-3 mr-1" />
-                      R\u00e9duire
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => { setIsExpanded(true); resetHideTimer(); }}
-                      className="h-5 px-2 text-xs text-success-400"
-                    >
-                      <Maximize2 className="w-3 h-3 mr-1" />
-                      Historique
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setIsMinimized(true)}
-                    className="h-5 px-2 text-xs text-orange-600 hover:text-orange-700"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Masquer
-                  </Button>
-                </div>
-                <p className="text-xs text-success-400 font-medium">
-                  \uD83D\uDC9A En ligne
-                </p>
+                )}
               </div>
             </div>
+
+            {/* Disclaimer */}
+            <p className="text-xs text-gray-500 text-center mt-2">
+              MAOS est une IA et peut faire des erreurs. Vérifiez les informations importantes.
+            </p>
           </div>
-        </>
-      )}
+        </div>
+      </div>
     </>
   );
 }

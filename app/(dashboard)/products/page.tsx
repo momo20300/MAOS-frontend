@@ -5,6 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import { getItems, createItem, exportToCSV, printDocument, importFromCSV } from "@/lib/services/erpnext";
 import { ProductForm } from "@/components/forms";
 import {
@@ -36,18 +40,33 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pageSize = 12;
 
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData<Item>(
+    filteredItems,
+    "item_name",
+    "asc"
+  );
+
   const fetchItems = async () => {
     setLoading(true);
-    const data = await getItems();
-    setItems(data);
-    setFilteredItems(data);
-    setLoading(false);
+    setError(null);
+    try {
+      const data = await getItems();
+      setItems(data);
+      setFilteredItems(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erreur de connexion au serveur";
+      setError(message);
+      console.error("Erreur chargement produits:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -71,9 +90,9 @@ export default function ProductsPage() {
 
   const groups = Array.from(new Set(items.map((item) => item.item_group)));
   const totalValue = items.reduce((sum, item) => sum + item.standard_rate, 0);
-  const totalPages = Math.ceil(filteredItems.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedItems = filteredItems.slice(startIndex, startIndex + pageSize);
+  const paginatedItems = sortedData.slice(startIndex, startIndex + pageSize);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -100,7 +119,7 @@ export default function ProductsPage() {
   };
 
   const handleExportCSV = () => {
-    exportToCSV(filteredItems, columns, "produits-maos");
+    exportToCSV(sortedData, columns, "produits-maos");
     showToast("Export CSV telecharge", "success");
   };
 
@@ -131,18 +150,11 @@ export default function ProductsPage() {
   };
 
   const handlePrint = () => {
-    printDocument(filteredItems, columns, "Catalogue des Produits");
+    printDocument(sortedData, columns, "Catalogue des Produits");
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des produits...
-        </div>
-      </div>
-    );
+    return <PageSkeleton title="Produits" kpiCount={4} layout="grid" />;
   }
 
   return (
@@ -173,6 +185,9 @@ export default function ProductsPage() {
           Nouveau Produit
         </Button>
       </div>
+
+      {/* Error */}
+      {error && <ErrorMessage message={error} onRetry={fetchItems} />}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -281,11 +296,17 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Results count */}
-      <div className="flex items-center">
+      {/* Results count + Sort bar */}
+      <div className="flex items-center justify-between">
         <Badge variant="secondary" className="rounded-lg">
-          {filteredItems.length} produit(s)
+          {sortedData.length} produit(s)
         </Badge>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-muted-foreground">Trier par:</span>
+          <SortableHeader label="Nom" sortKey="item_name" active={sortKey === "item_name"} direction={sortDir} onClick={toggleSort} />
+          <SortableHeader label="Prix" sortKey="standard_rate" active={sortKey === "standard_rate"} direction={sortDir} onClick={toggleSort} />
+          <SortableHeader label="Categorie" sortKey="item_group" active={sortKey === "item_group"} direction={sortDir} onClick={toggleSort} />
+        </div>
       </div>
 
       {/* Grid */}
@@ -331,7 +352,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Empty State */}
-      {filteredItems.length === 0 && (
+      {sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucun produit trouve</h3>
@@ -347,8 +368,8 @@ export default function ProductsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
-            {startIndex + 1}-{Math.min(startIndex + pageSize, filteredItems.length)} sur{" "}
-            {filteredItems.length}
+            {startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur{" "}
+            {sortedData.length}
           </p>
           <div className="flex items-center gap-1">
             <Button

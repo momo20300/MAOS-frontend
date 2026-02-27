@@ -82,25 +82,25 @@
   }
 
   .dark {
-    /* Theme MAOS Dark */
-    --background: 220 10% 6%;           /* #0d0f11 - Fond noir */
+    /* Theme MAOS Dark — Navy-blue premium (matches landing/login) */
+    --background: 222 47% 9%;           /* ~#0f1730 - Visible navy blue */
     --foreground: 210 14% 89%;          /* #d1d8dd - Texte clair */
-    --card: 220 10% 9%;                 /* #141619 - Cartes */
+    --card: 222 35% 12%;               /* ~#141e38 - Blue-tinted cards */
     --card-foreground: 210 14% 89%;
-    --popover: 220 10% 9%;
+    --popover: 222 35% 12%;
     --popover-foreground: 210 14% 89%;
     --primary: 146 37% 58%;             /* #6bbc8e - Nouveau vert MAOS */
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 10% 12%;           /* #1a1d20 */
+    --secondary: 222 25% 15%;           /* Richer secondary */
     --secondary-foreground: 210 14% 89%;
-    --muted: 220 10% 12%;
-    --muted-foreground: 215 14% 60%;
-    --accent: 220 10% 14%;
+    --muted: 222 25% 15%;
+    --muted-foreground: 215 14% 55%;
+    --accent: 222 25% 17%;
     --accent-foreground: 210 14% 89%;
     --destructive: 342 37% 61%;         /* #c3758c - Nouveau rouge MAOS */
     --destructive-foreground: 0 0% 100%;
-    --border: 220 10% 16%;              /* #242729 */
-    --input: 220 10% 16%;
+    --border: 222 20% 20%;              /* Visible blue-tinted border */
+    --input: 222 20% 20%;
     --ring: 146 37% 58%;                /* #6bbc8e */
   }
 }
@@ -114,6 +114,13 @@
   }
 }
 
+
+/* Animated gradient background (shared: landing, login, dashboard) */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 
 /* MAOS Talk Styles */
 .maos-talk-container {

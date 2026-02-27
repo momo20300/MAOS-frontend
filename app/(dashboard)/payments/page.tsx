@@ -5,6 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import {
   getPaymentEntries, getCustomers, getSuppliers, createPaymentEntry,
   exportToCSV, printDocument
@@ -47,23 +52,38 @@ export default function PaymentsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const pageSize = 10;
+
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData<Payment>(
+    filteredPayments,
+    "posting_date",
+    "desc"
+  );
 
   const fetchData = async () => {
     setLoading(true);
-    const [paymentsData, customersData, suppliersData] = await Promise.all([
-      getPaymentEntries(),
-      getCustomers(),
-      getSuppliers(),
-    ]);
-    setPayments(paymentsData);
-    setFilteredPayments(paymentsData);
-    setCustomers(customersData);
-    setSuppliers(suppliersData);
-    setLoading(false);
+    setError(null);
+    try {
+      const [paymentsData, customersData, suppliersData] = await Promise.all([
+        getPaymentEntries(),
+        getCustomers(),
+        getSuppliers(),
+      ]);
+      setPayments(paymentsData);
+      setFilteredPayments(paymentsData);
+      setCustomers(customersData);
+      setSuppliers(suppliersData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement des paiements");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -79,15 +99,23 @@ export default function PaymentsPage() {
     } else if (statusFilter === "pay") {
       filtered = filtered.filter(p => p.payment_type === "Pay");
     }
+
+    if (dateFrom) {
+      filtered = filtered.filter((p) => p.posting_date >= dateFrom);
+    }
+    if (dateTo) {
+      filtered = filtered.filter((p) => p.posting_date <= dateTo);
+    }
+
     setFilteredPayments(filtered);
     setCurrentPage(1);
-  }, [search, statusFilter, payments]);
+  }, [search, statusFilter, payments, dateFrom, dateTo]);
 
   const totalReceived = payments.filter(p => p.payment_type === "Receive").reduce((sum, p) => sum + (p.paid_amount || 0), 0);
   const totalPaid = payments.filter(p => p.payment_type === "Pay").reduce((sum, p) => sum + (p.paid_amount || 0), 0);
-  const totalPages = Math.ceil(filteredPayments.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginated = filteredPayments.slice(startIndex, startIndex + pageSize);
+  const paginated = sortedData.slice(startIndex, startIndex + pageSize);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -112,16 +140,7 @@ export default function PaymentsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des paiements...
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton title="Paiements" kpiCount={3} />;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -142,6 +161,9 @@ export default function PaymentsPage() {
           <Plus className="mr-2 h-4 w-4" /> Nouveau Paiement
         </Button>
       </div>
+
+      {/* Error State */}
+      {error && <ErrorMessage message={error} onRetry={fetchData} />}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="rounded-2xl">
@@ -191,17 +213,28 @@ export default function PaymentsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => { exportToCSV(filteredPayments, columns, "paiements-maos"); showToast("Export CSV telecharge", "success"); }} className="rounded-xl">
+          <Button variant="outline" size="sm" onClick={() => { exportToCSV(sortedData, columns, "paiements-maos"); showToast("Export CSV telecharge", "success"); }} className="rounded-xl">
             <Download className="h-4 w-4 mr-2" /> Exporter CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => printDocument(filteredPayments, columns, "Liste des Paiements")} className="rounded-xl">
+          <Button variant="outline" size="sm" onClick={() => printDocument(sortedData, columns, "Liste des Paiements")} className="rounded-xl">
             <Printer className="h-4 w-4 mr-2" /> Imprimer
           </Button>
         </div>
       </div>
 
+      {/* Date Range Filter */}
+      <DateRangeFilter from={dateFrom} to={dateTo} onChange={(f, t) => { setDateFrom(f); setDateTo(t); }} />
+
       <Card className="rounded-2xl">
-        <CardHeader><CardTitle>Historique des paiements ({filteredPayments.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Historique des paiements ({sortedData.length})</CardTitle></CardHeader>
+        {/* Sort Headers */}
+        <div className="px-6 pb-2 flex items-center gap-4 border-b overflow-x-auto">
+          <SortableHeader label="Reference" sortKey="name" active={sortKey === "name"} direction={sortDir} onClick={toggleSort} className="min-w-[100px]" />
+          <SortableHeader label="Tiers" sortKey="party_name" active={sortKey === "party_name"} direction={sortDir} onClick={toggleSort} className="min-w-[100px]" />
+          <SortableHeader label="Type" sortKey="payment_type" active={sortKey === "payment_type"} direction={sortDir} onClick={toggleSort} className="min-w-[80px]" />
+          <SortableHeader label="Date" sortKey="posting_date" active={sortKey === "posting_date"} direction={sortDir} onClick={toggleSort} className="min-w-[80px]" />
+          <SortableHeader label="Montant" sortKey="paid_amount" active={sortKey === "paid_amount"} direction={sortDir} onClick={toggleSort} className="min-w-[80px]" />
+        </div>
         <CardContent>
           <div className="space-y-3">
             {paginated.map(payment => (
@@ -231,7 +264,7 @@ export default function PaymentsPage() {
         </CardContent>
       </Card>
 
-      {filteredPayments.length === 0 && (
+      {sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucun paiement trouve</h3>
@@ -244,7 +277,7 @@ export default function PaymentsPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-muted-foreground">{startIndex + 1}-{Math.min(startIndex + pageSize, filteredPayments.length)} sur {filteredPayments.length}</p>
+          <p className="text-sm text-muted-foreground">{startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur {sortedData.length}</p>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg">
               <ChevronLeft className="h-4 w-4" />

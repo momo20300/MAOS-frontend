@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getSalesDashboard, SalesDashboardData } from "@/lib/services/erpnext";
+import { DashboardSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
 import {
   DollarSign, TrendingUp, TrendingDown, FileText, Users,
   AlertTriangle, RefreshCw, BarChart3, ShoppingCart, Calendar,
@@ -41,25 +43,12 @@ export default function SalesDashboardPage() {
     fetchData(true);
   }, [fetchData]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-lg text-muted-foreground">Chargement du tableau de bord...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton title="Dashboard Ventes" />;
 
   if (error || !data) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4">
-          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto" />
-          <p className="text-lg">{error || "Donnees indisponibles"}</p>
-          <Button onClick={() => fetchData(true)}>Reessayer</Button>
-        </div>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <ErrorMessage message={error || "Donnees indisponibles"} onRetry={() => fetchData(true)} />
       </div>
     );
   }
@@ -94,8 +83,8 @@ export default function SalesDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Link href="/invoices">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/invoices" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">CA du Mois</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -119,8 +108,8 @@ export default function SalesDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/invoices">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/invoices" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">CA Cumule</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -136,8 +125,8 @@ export default function SalesDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/invoices">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/invoices" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Impaye Total</CardTitle>
               <AlertTriangle className="h-4 w-4 text-yellow-600" />
@@ -153,8 +142,8 @@ export default function SalesDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/orders">
-          <Card className="rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
+        <Link href="/orders" className="h-full">
+          <Card className="rounded-2xl h-full cursor-pointer hover:shadow-md hover:border-primary/20 transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Facture Moyenne</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />

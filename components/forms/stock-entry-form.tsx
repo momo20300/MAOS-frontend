@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, BarChart3, Package, Plus, Trash2, Calendar, Warehouse } from "lucide-react";
 import { DocumentHeader } from "@/components/ui/document-header";
+import { useFormValidation } from "@/lib/hooks/use-form-validation";
+import { FieldError } from "@/components/ui/field-error";
 
 interface StockEntryItem {
   item_code: string;
@@ -57,6 +59,14 @@ export function StockEntryForm({
   warehouses = [{ name: 'Stores - MAOS' }, { name: 'Work In Progress - MAOS' }, { name: 'Finished Goods - MAOS' }],
 }: StockEntryFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const { validateAll, onBlur, getError, clearErrors } = useFormValidation({
+    stock_entry_type: { required: "Le type de mouvement est requis" },
+    items: { custom: (v) => {
+      const items = v as StockEntryItem[];
+      if (!items || items.length === 0 || !items.some(i => i.item_code)) return "Ajoutez au moins un article";
+      return null;
+    }},
+  });
   const [entryType, setEntryType] = React.useState<'Material Receipt' | 'Material Issue' | 'Material Transfer'>('Material Receipt');
   const [postingDate, setPostingDate] = React.useState<string>(
     new Date().toISOString().split("T")[0] as string
@@ -93,6 +103,7 @@ export function StockEntryForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateAll({ stock_entry_type: entryType, items: entryItems })) return;
     if (entryItems.some((item) => !item.item_code || item.qty <= 0)) return;
 
     setLoading(true);
@@ -114,7 +125,7 @@ export function StockEntryForm({
   const showTargetWarehouse = entryType === 'Material Receipt' || entryType === 'Material Transfer';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) clearErrors(); onOpenChange(o); }}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
@@ -133,8 +144,8 @@ export function StockEntryForm({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="entry_type">Type de mouvement *</Label>
-                <Select value={entryType} onValueChange={(v) => setEntryType(v as any)}>
+                <Label htmlFor="entry_type">Type de mouvement <span className="text-red-500">*</span></Label>
+                <Select value={entryType} onValueChange={(v) => { setEntryType(v as any); onBlur("stock_entry_type", v); }}>
                   <SelectTrigger className="rounded-xl">
                     <SelectValue placeholder="Type de mouvement" />
                   </SelectTrigger>
@@ -149,6 +160,7 @@ export function StockEntryForm({
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={getError("stock_entry_type")} />
               </div>
 
               <div className="grid gap-2">
@@ -168,7 +180,7 @@ export function StockEntryForm({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Articles</Label>
+                <Label className="text-base font-semibold">Articles <span className="text-red-500">*</span></Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -292,6 +304,7 @@ export function StockEntryForm({
                   </div>
                 ))}
               </div>
+              <FieldError message={getError("items")} />
             </div>
           </div>
 

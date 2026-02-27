@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getReportsDashboard, ReportsDashboardData } from "@/lib/services/erpnext";
 import { authFetch } from "@/lib/services/auth";
+import { DashboardSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
 import {
   FileBarChart, FolderOpen, CheckCircle, AlertTriangle,
   RefreshCw, ArrowRight, TrendingUp, Package,
@@ -73,25 +75,12 @@ export default function ReportsDashboardPage() {
     fetchData(true);
   }, [fetchData]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-lg text-muted-foreground">Chargement des rapports...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton title="Rapports" />;
 
   if (error || !data) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4">
-          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto" />
-          <p className="text-lg">{error || "Donnees indisponibles"}</p>
-          <Button onClick={() => fetchData(true)}>Reessayer</Button>
-        </div>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <ErrorMessage message={error || "Donnees indisponibles"} onRetry={() => fetchData(true)} />
       </div>
     );
   }

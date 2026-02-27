@@ -5,6 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import { getCustomers, createCustomer, exportToCSV, printDocument, importFromCSV } from "@/lib/services/erpnext";
 import { CustomerForm } from "@/components/forms";
 import {
@@ -37,18 +41,33 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pageSize = 12;
 
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData<Customer>(
+    filteredCustomers,
+    "customer_name",
+    "asc"
+  );
+
   const fetchCustomers = async () => {
     setLoading(true);
-    const data = await getCustomers();
-    setCustomers(data);
-    setFilteredCustomers(data);
-    setLoading(false);
+    setError(null);
+    try {
+      const data = await getCustomers();
+      setCustomers(data);
+      setFilteredCustomers(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erreur de connexion au serveur";
+      setError(message);
+      console.error("Erreur chargement clients:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -70,9 +89,9 @@ export default function ClientsPage() {
     setCurrentPage(1);
   }, [search, typeFilter, customers]);
 
-  const totalPages = Math.ceil(filteredCustomers.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedCustomers = filteredCustomers.slice(startIndex, startIndex + pageSize);
+  const paginatedCustomers = sortedData.slice(startIndex, startIndex + pageSize);
 
   const stats = {
     total: customers.length,
@@ -104,7 +123,7 @@ export default function ClientsPage() {
   };
 
   const handleExportCSV = () => {
-    exportToCSV(filteredCustomers, columns, "clients-maos");
+    exportToCSV(sortedData, columns, "clients-maos");
     showToast("Export CSV telecharge", "success");
   };
 
@@ -135,18 +154,11 @@ export default function ClientsPage() {
   };
 
   const handlePrint = () => {
-    printDocument(filteredCustomers, columns, "Liste des Clients");
+    printDocument(sortedData, columns, "Liste des Clients");
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des clients...
-        </div>
-      </div>
-    );
+    return <PageSkeleton title="Clients" kpiCount={3} layout="grid" />;
   }
 
   return (
@@ -177,6 +189,9 @@ export default function ClientsPage() {
           Nouveau Client
         </Button>
       </div>
+
+      {/* Error */}
+      {error && <ErrorMessage message={error} onRetry={fetchCustomers} />}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -277,11 +292,17 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Results count */}
+      {/* Results count + Sort bar */}
       <div className="flex items-center justify-between">
         <Badge variant="secondary" className="rounded-lg">
-          {filteredCustomers.length} resultat(s)
+          {sortedData.length} resultat(s)
         </Badge>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-muted-foreground">Trier par:</span>
+          <SortableHeader label="Nom" sortKey="customer_name" active={sortKey === "customer_name"} direction={sortDir} onClick={toggleSort} />
+          <SortableHeader label="Type" sortKey="customer_type" active={sortKey === "customer_type"} direction={sortDir} onClick={toggleSort} />
+          <SortableHeader label="Groupe" sortKey="customer_group" active={sortKey === "customer_group"} direction={sortDir} onClick={toggleSort} />
+        </div>
       </div>
 
       {/* Grid */}
@@ -338,7 +359,7 @@ export default function ClientsPage() {
       </div>
 
       {/* Empty State */}
-      {filteredCustomers.length === 0 && (
+      {sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucun client trouve</h3>
@@ -356,8 +377,8 @@ export default function ClientsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
-            {startIndex + 1}-{Math.min(startIndex + pageSize, filteredCustomers.length)} sur{" "}
-            {filteredCustomers.length}
+            {startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur{" "}
+            {sortedData.length}
           </p>
           <div className="flex items-center gap-1">
             <Button

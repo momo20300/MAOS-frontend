@@ -5,6 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import {
   getJournalEntries, getAccounts, createJournalEntry,
   exportToCSV, printDocument
@@ -43,21 +48,36 @@ export default function JournalEntriesPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const pageSize = 10;
+
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData<JournalEntry>(
+    filteredEntries,
+    "posting_date",
+    "desc"
+  );
 
   const fetchData = async () => {
     setLoading(true);
-    const [entriesData, accountsData] = await Promise.all([
-      getJournalEntries(),
-      getAccounts(),
-    ]);
-    setEntries(entriesData);
-    setFilteredEntries(entriesData);
-    setAccounts(accountsData);
-    setLoading(false);
+    setError(null);
+    try {
+      const [entriesData, accountsData] = await Promise.all([
+        getJournalEntries(),
+        getAccounts(),
+      ]);
+      setEntries(entriesData);
+      setFilteredEntries(entriesData);
+      setAccounts(accountsData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement des ecritures comptables");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -71,16 +91,24 @@ export default function JournalEntriesPage() {
     if (typeFilter !== "all") {
       filtered = filtered.filter(e => e.voucher_type === typeFilter);
     }
+
+    if (dateFrom) {
+      filtered = filtered.filter((e) => e.posting_date >= dateFrom);
+    }
+    if (dateTo) {
+      filtered = filtered.filter((e) => e.posting_date <= dateTo);
+    }
+
     setFilteredEntries(filtered);
     setCurrentPage(1);
-  }, [search, typeFilter, entries]);
+  }, [search, typeFilter, entries, dateFrom, dateTo]);
 
   const totalDebit = entries.reduce((sum, e) => sum + (e.total_debit || 0), 0);
   const journalCount = entries.filter(e => e.voucher_type === "Journal Entry").length;
   const bankCount = entries.filter(e => e.voucher_type === "Bank Entry").length;
-  const totalPages = Math.ceil(filteredEntries.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginated = filteredEntries.slice(startIndex, startIndex + pageSize);
+  const paginated = sortedData.slice(startIndex, startIndex + pageSize);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -115,16 +143,7 @@ export default function JournalEntriesPage() {
     return <Badge variant={variants[type] || "secondary"} className="rounded-lg">{labels[type] || type}</Badge>;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des ecritures...
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton title="Ecritures Comptables" kpiCount={4} />;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -145,6 +164,9 @@ export default function JournalEntriesPage() {
           <Plus className="mr-2 h-4 w-4" /> Nouvelle Ecriture
         </Button>
       </div>
+
+      {/* Error State */}
+      {error && <ErrorMessage message={error} onRetry={fetchData} />}
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="rounded-2xl">
@@ -209,17 +231,28 @@ export default function JournalEntriesPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => { exportToCSV(filteredEntries, columns, "ecritures-comptables-maos"); showToast("Export CSV telecharge", "success"); }} className="rounded-xl">
+          <Button variant="outline" size="sm" onClick={() => { exportToCSV(sortedData, columns, "ecritures-comptables-maos"); showToast("Export CSV telecharge", "success"); }} className="rounded-xl">
             <Download className="h-4 w-4 mr-2" /> Exporter CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => printDocument(filteredEntries, columns, "Liste des Ecritures Comptables")} className="rounded-xl">
+          <Button variant="outline" size="sm" onClick={() => printDocument(sortedData, columns, "Liste des Ecritures Comptables")} className="rounded-xl">
             <Printer className="h-4 w-4 mr-2" /> Imprimer
           </Button>
         </div>
       </div>
 
+      {/* Date Range Filter */}
+      <DateRangeFilter from={dateFrom} to={dateTo} onChange={(f, t) => { setDateFrom(f); setDateTo(t); }} />
+
       <Card className="rounded-2xl">
-        <CardHeader><CardTitle>Liste des ecritures ({filteredEntries.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Liste des ecritures ({sortedData.length})</CardTitle></CardHeader>
+        {/* Sort Headers */}
+        <div className="px-6 pb-2 flex items-center gap-4 border-b overflow-x-auto">
+          <SortableHeader label="Reference" sortKey="name" active={sortKey === "name"} direction={sortDir} onClick={toggleSort} className="min-w-[100px]" />
+          <SortableHeader label="Type" sortKey="voucher_type" active={sortKey === "voucher_type"} direction={sortDir} onClick={toggleSort} className="min-w-[80px]" />
+          <SortableHeader label="Date" sortKey="posting_date" active={sortKey === "posting_date"} direction={sortDir} onClick={toggleSort} className="min-w-[80px]" />
+          <SortableHeader label="Debit" sortKey="total_debit" active={sortKey === "total_debit"} direction={sortDir} onClick={toggleSort} className="min-w-[80px]" />
+          <SortableHeader label="Credit" sortKey="total_credit" active={sortKey === "total_credit"} direction={sortDir} onClick={toggleSort} className="min-w-[80px]" />
+        </div>
         <CardContent>
           <div className="space-y-3">
             {paginated.map(entry => (
@@ -247,7 +280,7 @@ export default function JournalEntriesPage() {
         </CardContent>
       </Card>
 
-      {filteredEntries.length === 0 && (
+      {sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucune ecriture trouvee</h3>
@@ -260,7 +293,7 @@ export default function JournalEntriesPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-muted-foreground">{startIndex + 1}-{Math.min(startIndex + pageSize, filteredEntries.length)} sur {filteredEntries.length}</p>
+          <p className="text-sm text-muted-foreground">{startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur {sortedData.length}</p>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0 rounded-lg">
               <ChevronLeft className="h-4 w-4" />

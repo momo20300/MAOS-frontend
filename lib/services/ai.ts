@@ -1,5 +1,3 @@
-import { authFetch } from './auth';
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export interface AttachedFile {
@@ -54,7 +52,8 @@ export async function sendMessageToAI(
       forcedLang: options?.forcedLang, // Force response language
     };
 
-    const response = await authFetch('/api/chat', {
+    // Call Next.js API route (proxies to backend orchestrator with cookie auth)
+    const response = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -111,7 +110,7 @@ export interface StreamingCallbacks {
 export async function sendMessageStreamingSSE(
   message: string,
   callbacks: StreamingCallbacks,
-  options?: { wantAudio?: boolean; sessionId?: string }
+  options?: { wantAudio?: boolean; sessionId?: string; files?: Array<{ name: string; type: string; content: string }> }
 ): Promise<void> {
   const token = sessionStorage.getItem('maos_access_token');
   if (!token) {
@@ -131,6 +130,7 @@ export async function sendMessageStreamingSSE(
         message,
         wantAudio: options?.wantAudio ?? true,
         sessionId: options?.sessionId,
+        files: options?.files,
       }),
     });
 

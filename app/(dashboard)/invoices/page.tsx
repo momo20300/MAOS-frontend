@@ -5,6 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import {
   getInvoices, getCustomers, getItems, createInvoice,
   exportToCSV, printDocument, printDocumentPDF,
@@ -57,24 +62,33 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const pageSize = 10;
 
   const fetchInvoices = async () => {
     setLoading(true);
-    const [invoicesData, customersData, itemsData] = await Promise.all([
-      getInvoices(),
-      getCustomers(),
-      getItems(),
-    ]);
-    setInvoices(invoicesData);
-    setFilteredInvoices(invoicesData);
-    setCustomers(customersData);
-    setItems(itemsData);
-    setLoading(false);
+    setError(null);
+    try {
+      const [invoicesData, customersData, itemsData] = await Promise.all([
+        getInvoices(),
+        getCustomers(),
+        getItems(),
+      ]);
+      setInvoices(invoicesData);
+      setFilteredInvoices(invoicesData);
+      setCustomers(customersData);
+      setItems(itemsData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur de chargement");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -92,17 +106,26 @@ export default function InvoicesPage() {
       filtered = filtered.filter((inv) => inv.status === statusFilter);
     }
 
+    if (dateFrom) filtered = filtered.filter(d => d.posting_date >= dateFrom);
+    if (dateTo) filtered = filtered.filter(d => d.posting_date <= dateTo);
+
     setFilteredInvoices(filtered);
     setCurrentPage(1);
-  }, [search, statusFilter, invoices]);
+  }, [search, statusFilter, invoices, dateFrom, dateTo]);
+
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData(
+    filteredInvoices as unknown as Record<string, unknown>[],
+    "posting_date",
+    "desc"
+  );
 
   const submittedInvoices = invoices.filter((inv) => inv.docstatus === 1);
   const totalAmount = submittedInvoices.reduce((sum, inv) => sum + (inv.grand_total || 0), 0);
   const totalOutstanding = submittedInvoices.reduce((sum, inv) => sum + (inv.outstanding_amount || 0), 0);
   const unpaidCount = submittedInvoices.filter((inv) => inv.status === "Unpaid").length;
-  const totalPages = Math.ceil(filteredInvoices.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + pageSize);
+  const paginatedInvoices = sortedData.slice(startIndex, startIndex + pageSize) as unknown as Invoice[];
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -219,16 +242,7 @@ export default function InvoicesPage() {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des factures...
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton title="Factures" kpiCount={4} />;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -258,6 +272,11 @@ export default function InvoicesPage() {
           Nouvelle Facture
         </Button>
       </div>
+
+      {/* Error */}
+      {error && !invoices.length && (
+        <ErrorMessage message={error} onRetry={fetchInvoices} />
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -350,6 +369,7 @@ export default function InvoicesPage() {
               Impayees
             </Button>
           </div>
+          <DateRangeFilter from={dateFrom} to={dateTo} onChange={(f, t) => { setDateFrom(f); setDateTo(t); }} />
         </div>
 
         <div className="flex items-center gap-2">
@@ -367,10 +387,22 @@ export default function InvoicesPage() {
       {/* Table */}
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle>Liste des factures ({filteredInvoices.length})</CardTitle>
+          <CardTitle>Liste des factures ({sortedData.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          {/* Sort header bar */}
+          <div className="hidden md:flex items-center gap-4 px-4 pb-2 border-b text-xs font-medium text-muted-foreground">
+            <SortableHeader label="Reference" sortKey="name" active={sortKey === "name"} direction={sortDir} onClick={toggleSort} className="w-32" />
+            <SortableHeader label="Client" sortKey="customer_name" active={sortKey === "customer_name"} direction={sortDir} onClick={toggleSort} className="flex-1" />
+            <SortableHeader label="Date" sortKey="posting_date" active={sortKey === "posting_date"} direction={sortDir} onClick={toggleSort} className="w-24" />
+            <SortableHeader label="Echeance" sortKey="due_date" active={sortKey === "due_date"} direction={sortDir} onClick={toggleSort} className="w-24" />
+            <SortableHeader label="Montant" sortKey="grand_total" active={sortKey === "grand_total"} direction={sortDir} onClick={toggleSort} className="w-28 text-right" />
+            <SortableHeader label="Reste" sortKey="outstanding_amount" active={sortKey === "outstanding_amount"} direction={sortDir} onClick={toggleSort} className="w-24 text-right" />
+            <span className="w-20">Statut</span>
+            <span className="w-32">Actions</span>
+          </div>
+
+          <div className="space-y-3 mt-3">
             {paginatedInvoices.map((invoice) => (
               <div
                 key={invoice.name}
@@ -463,7 +495,7 @@ export default function InvoicesPage() {
       </Card>
 
       {/* Empty State */}
-      {filteredInvoices.length === 0 && (
+      {sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucune facture trouvee</h3>
@@ -479,8 +511,8 @@ export default function InvoicesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
-            {startIndex + 1}-{Math.min(startIndex + pageSize, filteredInvoices.length)} sur{" "}
-            {filteredInvoices.length}
+            {startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur{" "}
+            {sortedData.length}
           </p>
           <div className="flex items-center gap-1">
             <Button

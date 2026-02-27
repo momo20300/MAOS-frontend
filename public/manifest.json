@@ -1,0 +1,14 @@
+{
+  "name": "MAOS - Multi-Agent Operating System",
+  "short_name": "MAOS",
+  "description": "Assistant IA pour dirigeants de PME",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0a0f1e",
+  "theme_color": "#0a0f1e",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/maos-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/maos-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

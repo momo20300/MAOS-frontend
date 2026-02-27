@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Building2, Globe, Tag } from "lucide-react";
 import { DocumentHeader } from "@/components/ui/document-header";
+import { useFormValidation } from "@/lib/hooks/use-form-validation";
+import { FieldError } from "@/components/ui/field-error";
 
 interface SupplierFormData {
   supplier_name: string;
@@ -58,6 +60,9 @@ export function SupplierForm({
   mode = "create",
 }: SupplierFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const { validateAll, onBlur, getError, clearErrors } = useFormValidation({
+    supplier_name: { required: true },
+  });
   const [formData, setFormData] = React.useState<SupplierFormData>({
     supplier_name: initialData?.supplier_name || "",
     supplier_type: initialData?.supplier_type || "Company",
@@ -78,7 +83,7 @@ export function SupplierForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.supplier_name.trim()) return;
+    if (!validateAll({ supplier_name: formData.supplier_name })) return;
 
     setLoading(true);
     try {
@@ -96,7 +101,7 @@ export function SupplierForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) clearErrors(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
@@ -118,7 +123,7 @@ export function SupplierForm({
             <div className="grid gap-2">
               <Label htmlFor="supplier_name" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
-                Nom du fournisseur *
+                Nom du fournisseur <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="supplier_name"
@@ -127,9 +132,11 @@ export function SupplierForm({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, supplier_name: e.target.value }))
                 }
+                onBlur={(e) => onBlur("supplier_name", e.target.value)}
                 required
                 className="rounded-xl"
               />
+              <FieldError message={getError("supplier_name")} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -213,7 +220,7 @@ export function SupplierForm({
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={loading || !formData.supplier_name.trim()} className="rounded-xl">
+            <Button type="submit" disabled={loading} className="rounded-xl">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {mode === "create" ? "Creer le fournisseur" : "Enregistrer"}
             </Button>

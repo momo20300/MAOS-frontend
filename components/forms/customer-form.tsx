@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, User, Building2, Mail, Phone, MapPin } from "lucide-react";
 import { DocumentHeader } from "@/components/ui/document-header";
+import { useFormValidation } from "@/lib/hooks/use-form-validation";
+import { FieldError } from "@/components/ui/field-error";
 
 interface CustomerFormData {
   customer_name: string;
@@ -65,6 +67,10 @@ export function CustomerForm({
   mode = "create",
 }: CustomerFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const { validateAll, onBlur, getError, clearErrors } = useFormValidation({
+    customer_name: { required: true },
+    email_id: { pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Email invalide" } },
+  });
   const [formData, setFormData] = React.useState<CustomerFormData>({
     customer_name: initialData?.customer_name || "",
     customer_type: initialData?.customer_type || "Company",
@@ -89,7 +95,7 @@ export function CustomerForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.customer_name.trim()) return;
+    if (!validateAll({ customer_name: formData.customer_name, email_id: formData.email_id })) return;
 
     setLoading(true);
     try {
@@ -109,7 +115,7 @@ export function CustomerForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) clearErrors(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}
@@ -131,7 +137,7 @@ export function CustomerForm({
             <div className="grid gap-2">
               <Label htmlFor="customer_name" className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
-                Nom du client *
+                Nom du client <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="customer_name"
@@ -140,9 +146,11 @@ export function CustomerForm({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, customer_name: e.target.value }))
                 }
+                onBlur={(e) => onBlur("customer_name", e.target.value)}
                 required
                 className="rounded-xl"
               />
+              <FieldError message={getError("customer_name")} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -229,8 +237,10 @@ export function CustomerForm({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, email_id: e.target.value }))
                   }
+                  onBlur={(e) => onBlur("email_id", e.target.value)}
                   className="rounded-xl"
                 />
+                <FieldError message={getError("email_id")} />
               </div>
 
               <div className="grid gap-2">
@@ -261,7 +271,7 @@ export function CustomerForm({
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={loading || !formData.customer_name.trim()} className="rounded-xl">
+            <Button type="submit" disabled={loading} className="rounded-xl">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {mode === "create" ? "Creer le client" : "Enregistrer"}
             </Button>

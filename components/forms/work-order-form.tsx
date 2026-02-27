@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Factory, Package, Calendar, ClipboardList } from "lucide-react";
 import { DocumentHeader } from "@/components/ui/document-header";
+import { useFormValidation } from "@/lib/hooks/use-form-validation";
+import { FieldError } from "@/components/ui/field-error";
 
 const getDefaultDate = (): string => new Date().toISOString().split("T")[0] as string;
 
@@ -47,6 +49,14 @@ export function WorkOrderForm({
   boms,
 }: WorkOrderFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const { validateAll, onBlur, getError, clearErrors } = useFormValidation({
+    production_item: { required: "L'article a fabriquer est requis" },
+    qty: { custom: (v) => {
+      const n = Number(v);
+      if (!n || n <= 0) return "La quantite doit etre superieure a 0";
+      return null;
+    }},
+  });
   const [productionItem, setProductionItem] = React.useState("");
   const [qty, setQty] = React.useState(1);
   const [bomNo, setBomNo] = React.useState("");
@@ -65,6 +75,7 @@ export function WorkOrderForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateAll({ production_item: productionItem, qty })) return;
     if (!productionItem || qty <= 0) return;
 
     setLoading(true);
@@ -85,7 +96,7 @@ export function WorkOrderForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) clearErrors(); onOpenChange(o); }}>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           {/* Document Header - OBLIGATOIRE selon CLAUDE.md */}

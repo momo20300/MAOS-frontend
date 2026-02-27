@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, FileText, Building2, Calendar, Trash2, Plus } from "lucide-react";
 import { DocumentHeader } from "@/components/ui/document-header";
+import { useFormValidation } from "@/lib/hooks/use-form-validation";
+import { FieldError } from "@/components/ui/field-error";
 
 interface PINVItem {
   item_code: string;
@@ -37,6 +39,14 @@ export function PurchaseInvoiceForm({
   open, onOpenChange, onSubmit, suppliers, items: availableItems,
 }: PurchaseInvoiceFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const { validateAll, onBlur, getError, clearErrors } = useFormValidation({
+    supplier: { required: "Le fournisseur est requis" },
+    items: { custom: (v) => {
+      const items = v as PINVItem[];
+      if (!items || items.length === 0 || !items.some(i => i.item_code)) return "Ajoutez au moins un article";
+      return null;
+    }},
+  });
   const [supplier, setSupplier] = React.useState("");
   const [dueDate, setDueDate] = React.useState(
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] as string
@@ -71,6 +81,7 @@ export function PurchaseInvoiceForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateAll({ supplier, items: orderItems })) return;
     if (!supplier || orderItems.some(i => !i.item_code)) return;
     setLoading(true);
     try {
@@ -84,7 +95,7 @@ export function PurchaseInvoiceForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) clearErrors(); onOpenChange(o); }}>
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DocumentHeader title="Facture d'Achat (PINV)" />
@@ -98,13 +109,14 @@ export function PurchaseInvoiceForm({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" /> Fournisseur *</Label>
-                <Select value={supplier} onValueChange={setSupplier}>
+                <Label className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" /> Fournisseur <span className="text-red-500">*</span></Label>
+                <Select value={supplier} onValueChange={(v) => { setSupplier(v); onBlur("supplier", v); }}>
                   <SelectTrigger className="rounded-xl"><SelectValue placeholder="Selectionnez un fournisseur" /></SelectTrigger>
                   <SelectContent>
                     {suppliers.map(s => <SelectItem key={s.name} value={s.name}>{s.supplier_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <FieldError message={getError("supplier")} />
               </div>
               <div className="grid gap-2">
                 <Label className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> Date d'echeance</Label>
@@ -114,7 +126,7 @@ export function PurchaseInvoiceForm({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Articles</Label>
+                <Label className="text-base font-semibold">Articles <span className="text-red-500">*</span></Label>
                 <Button type="button" variant="outline" size="sm" onClick={addItem} className="rounded-xl">
                   <Plus className="h-4 w-4 mr-1" /> Ajouter
                 </Button>
@@ -149,6 +161,7 @@ export function PurchaseInvoiceForm({
                   </div>
                 ))}
               </div>
+              <FieldError message={getError("items")} />
               <div className="flex justify-end pt-2 border-t">
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Total</p>

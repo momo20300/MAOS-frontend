@@ -5,6 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableData } from "@/lib/hooks/use-sortable-data";
 import { getStockEntries, getItems, createStockEntry, exportToCSV, printDocument, submitStockEntry, cancelStockEntry } from "@/lib/services/erpnext";
 import { StockEntryForm } from "@/components/forms";
 import {
@@ -44,22 +49,37 @@ export default function StockEntriesPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const pageSize = 10;
+
+  const { sortedData, sortKey, sortDir, toggleSort } = useSortableData<StockEntry>(
+    filteredEntries,
+    "posting_date",
+    "desc"
+  );
 
   const fetchData = async () => {
     setLoading(true);
-    const [entriesData, itemsData] = await Promise.all([
-      getStockEntries(),
-      getItems(),
-    ]);
-    setEntries(entriesData);
-    setFilteredEntries(entriesData);
-    setItems(itemsData);
-    setLoading(false);
+    setError(null);
+    try {
+      const [entriesData, itemsData] = await Promise.all([
+        getStockEntries(),
+        getItems(),
+      ]);
+      setEntries(entriesData);
+      setFilteredEntries(entriesData);
+      setItems(itemsData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement des mouvements de stock");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -77,17 +97,24 @@ export default function StockEntriesPage() {
       filtered = filtered.filter((e) => e.stock_entry_type === typeFilter);
     }
 
+    if (dateFrom) {
+      filtered = filtered.filter((e) => e.posting_date >= dateFrom);
+    }
+    if (dateTo) {
+      filtered = filtered.filter((e) => e.posting_date <= dateTo);
+    }
+
     setFilteredEntries(filtered);
     setCurrentPage(1);
-  }, [search, typeFilter, entries]);
+  }, [search, typeFilter, entries, dateFrom, dateTo]);
 
   const receipts = entries.filter((e) => e.stock_entry_type === "Material Receipt").length;
   const issues = entries.filter((e) => e.stock_entry_type === "Material Issue").length;
   const transfers = entries.filter((e) => e.stock_entry_type === "Material Transfer").length;
   const types = Array.from(new Set(entries.map((e) => e.stock_entry_type).filter(Boolean)));
-  const totalPages = Math.ceil(filteredEntries.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedEntries = filteredEntries.slice(startIndex, startIndex + pageSize);
+  const paginatedEntries = sortedData.slice(startIndex, startIndex + pageSize);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -110,12 +137,12 @@ export default function StockEntriesPage() {
   };
 
   const handleExportCSV = () => {
-    exportToCSV(filteredEntries, columns, "mouvements-stock-maos");
+    exportToCSV(sortedData, columns, "mouvements-stock-maos");
     showToast("Export CSV telecharge", "success");
   };
 
   const handlePrint = () => {
-    printDocument(filteredEntries, columns, "Mouvements de Stock");
+    printDocument(sortedData, columns, "Mouvements de Stock");
   };
 
   const handleSubmitEntry = async (name: string) => {
@@ -173,16 +200,7 @@ export default function StockEntriesPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          Chargement des mouvements de stock...
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton title="Mouvements de Stock" kpiCount={4} />;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -212,6 +230,9 @@ export default function StockEntriesPage() {
           Nouveau Mouvement
         </Button>
       </div>
+
+      {/* Error State */}
+      {error && <ErrorMessage message={error} onRetry={fetchData} />}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -313,11 +334,23 @@ export default function StockEntriesPage() {
         </div>
       </div>
 
+      {/* Date Range Filter */}
+      <DateRangeFilter from={dateFrom} to={dateTo} onChange={(f, t) => { setDateFrom(f); setDateTo(t); }} />
+
       {/* Table */}
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle>Historique des mouvements</CardTitle>
         </CardHeader>
+        {/* Sort Headers */}
+        <div className="px-6 pb-2 flex items-center gap-4 border-b overflow-x-auto">
+          <SortableHeader label="Reference" sortKey="name" active={sortKey === "name"} direction={sortDir} onClick={toggleSort} className="min-w-[100px]" />
+          <SortableHeader label="Type" sortKey="stock_entry_type" active={sortKey === "stock_entry_type"} direction={sortDir} onClick={toggleSort} className="min-w-[80px]" />
+          <SortableHeader label="Entrepot Source" sortKey="from_warehouse" active={sortKey === "from_warehouse"} direction={sortDir} onClick={toggleSort} className="min-w-[120px]" />
+          <SortableHeader label="Entrepot Dest" sortKey="to_warehouse" active={sortKey === "to_warehouse"} direction={sortDir} onClick={toggleSort} className="min-w-[120px]" />
+          <SortableHeader label="Date" sortKey="posting_date" active={sortKey === "posting_date"} direction={sortDir} onClick={toggleSort} className="min-w-[80px]" />
+          <SortableHeader label="Statut" sortKey="docstatus" active={sortKey === "docstatus"} direction={sortDir} onClick={toggleSort} className="min-w-[70px]" />
+        </div>
         <CardContent>
           <div className="space-y-3">
             {paginatedEntries.map((entry) => (
@@ -390,7 +423,7 @@ export default function StockEntriesPage() {
       </Card>
 
       {/* Empty State */}
-      {filteredEntries.length === 0 && (
+      {sortedData.length === 0 && (
         <div className="text-center py-12">
           <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
           <h3 className="mt-4 text-lg font-semibold">Aucun mouvement de stock</h3>
@@ -406,8 +439,8 @@ export default function StockEntriesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
-            {startIndex + 1}-{Math.min(startIndex + pageSize, filteredEntries.length)} sur{" "}
-            {filteredEntries.length}
+            {startIndex + 1}-{Math.min(startIndex + pageSize, sortedData.length)} sur{" "}
+            {sortedData.length}
           </p>
           <div className="flex items-center gap-1">
             <Button

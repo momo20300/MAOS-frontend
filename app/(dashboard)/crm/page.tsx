@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCrmDashboard, CrmDashboardData } from "@/lib/services/erpnext";
+import { DashboardSkeleton } from "@/components/ui/skeleton";
+import { ErrorMessage } from "@/components/ui/error-message";
 import {
   Users, UserPlus, Target, TrendingUp, TrendingDown,
   AlertTriangle, RefreshCw, BarChart3, DollarSign,
@@ -52,25 +54,12 @@ export default function CrmDashboardPage() {
     fetchData(true);
   }, [fetchData]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-lg text-muted-foreground">Chargement du CRM...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton title="CRM" />;
 
   if (error || !data) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4">
-          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto" />
-          <p className="text-lg">{error || "Donnees indisponibles"}</p>
-          <Button onClick={() => fetchData(true)}>Reessayer</Button>
-        </div>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <ErrorMessage message={error || "Donnees indisponibles"} onRetry={() => fetchData(true)} />
       </div>
     );
   }

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/context/auth-context";
 import { useSidebar } from "@/src/context/SidebarContext";
@@ -228,10 +227,8 @@ function hasMinRole(userRole: UserRole, minRole?: UserRole): boolean {
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout, isLoading } = useAuth();
-  const { resolvedTheme } = useTheme();
   const { isMobileOpen, toggleMobileSidebar } = useSidebar();
   const mountedRef = useRef(false);
-  const [mounted, setMounted] = useState(false);
 
   // Determine the user's effective role
   const userRole: UserRole = useMemo(() => {
@@ -274,7 +271,6 @@ export default function Sidebar() {
   useEffect(() => {
     if (!mountedRef.current) {
       mountedRef.current = true;
-      setMounted(true);
     }
   }, []);
 
@@ -299,10 +295,6 @@ export default function Sidebar() {
     }));
   };
 
-  // Determine logo based on theme
-  const logoSrc = mounted && resolvedTheme === 'dark'
-    ? '/logo_darkmode.png'
-    : '/logo_lightmode.png';
 
   const handleLogout = async () => {
     await logout();
@@ -325,18 +317,9 @@ export default function Sidebar() {
   const sidebarContent = (
     <div className="flex h-full max-h-screen flex-col gap-2">
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <div className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={logoSrc}
-              alt="MAOS"
-              className="h-8 w-auto"
-            />
-            <Badge variant="secondary" className="text-xs">
-              v1.0
-            </Badge>
-          </div>
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold truncate">
+          <Building2 className="h-5 w-5 text-primary shrink-0" />
+          <span className="truncate text-sm">{user?.currentTenant?.name || "Mon Entreprise"}</span>
         </Link>
       </div>
 
@@ -350,11 +333,11 @@ export default function Sidebar() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className="text-base font-medium truncate">
                 {user.firstName} {user.lastName}
               </p>
               {user.currentTenant && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Building className="h-3 w-3" />
                   <span className="truncate">{user.currentTenant.name}</span>
                 </div>
@@ -368,7 +351,7 @@ export default function Sidebar() {
       )}
 
       <div className="flex-1 overflow-y-auto py-2">
-        <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+        <nav className="grid items-start px-2 text-base font-medium lg:px-4">
           {/* Dashboard (toujours visible) */}
           <Link
             href="/dashboard"
@@ -443,7 +426,7 @@ export default function Sidebar() {
       <div className="p-4 border-t">
         <Button
           variant="ghost"
-          className="w-full justify-start text-sm"
+          className="w-full justify-start text-base"
           onClick={handleLogout}
           disabled={isLoading}
         >
@@ -461,7 +444,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar - hidden on mobile */}
-      <div className="hidden border-r bg-muted/40 md:block w-64">
+      <div className="hidden border-r border-white/[0.06] bg-white/[0.03] backdrop-blur-sm md:block w-64">
         {sidebarContent}
       </div>
 
@@ -476,7 +459,7 @@ export default function Sidebar() {
       {/* Mobile Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 border-r bg-background transform transition-transform duration-300 ease-in-out md:hidden",
+          "fixed inset-y-0 left-0 z-50 w-64 border-r border-white/[0.06] bg-white/[0.03] backdrop-blur-sm transform transition-transform duration-300 ease-in-out md:hidden",
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
